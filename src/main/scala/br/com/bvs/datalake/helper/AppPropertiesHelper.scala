@@ -2,8 +2,11 @@ package br.com.bvs.datalake.helper
 
 import java.io.FileInputStream
 import java.util.Properties
+
 import scala.concurrent.duration._
 import akka.util.Timeout
+import br.com.bvs.datalake.model.SupervisorMetadata
+
 import scala.language.postfixOps
 
 object AppPropertiesHelper {
@@ -21,6 +24,15 @@ object AppPropertiesHelper {
 
   def getAppProps: Properties = {
     readProperties("app")
+  }
+
+  def getSupervisorMetadata: SupervisorMetadata = {
+    val props = readProperties("supervisor")
+
+    SupervisorMetadata(
+      props.getProperty("ongoingDirectory"),
+      props.getProperty("failDirectory"),
+      Timeout(props.getProperty("hdfsClientTimeout").toInt seconds))
   }
 
 }

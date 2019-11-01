@@ -25,12 +25,4 @@ object TextUtil {
     text.replaceAll(alphaAccentedRegex, "")
   }
 
-  def checkStringData(str: String): Boolean = {
-    str.length == 8 && str.matches("\\d+")
-  }
-
-  def convertBrToUSData(str: String): String = {
-    str.substring(4) + str.substring(2, 4) + str.substring(0, 2)
-  }
-
 }

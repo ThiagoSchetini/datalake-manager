@@ -9,8 +9,10 @@ object HadoopConfigurationHelper {
   @volatile private var lastConfiguration: Configuration = _
 
   def getConfiguration: Configuration = {
-    val environment = AppPropertiesHelper.getAppProps.getProperty("HADOOP_CONF_DIR")
-    lastConfiguration = buildConfiguration(environment)
+    if(lastConfiguration != null) {
+      val environment = AppPropertiesHelper.getAppProps.getProperty("HADOOP_CONF_DIR")
+      lastConfiguration = buildConfiguration(environment)
+    }
     lastConfiguration
   }
 

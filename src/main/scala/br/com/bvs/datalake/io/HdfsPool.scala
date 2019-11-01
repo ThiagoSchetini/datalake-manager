@@ -5,22 +5,23 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
 import scala.collection.mutable
 import br.com.bvs.datalake.helper.HadoopConfigurationHelper
-import HdfsFactory._
+import HdfsPool._
 
-object HdfsFactory {
-  def props: Props = Props(new HdfsFactory)
+object HdfsPool {
+  def props: Props = Props(new HdfsPool)
   case class Appendable(target: String, appender: FSDataOutputStream, hdfsIO: ActorRef)
   case object GetClient
   case class GetAppendable(target: String)
   case class HereGoesTheAppendable(appendable: Appendable)
 }
 
-class HdfsFactory extends Actor with ActorLogging {
-  private var hdfs: FileSystem = _
+class HdfsPool extends Actor with ActorLogging {
 
+  /* one unique client to application */
+  private var hdfsClient: FileSystem = _
+
+  /* one unique appender per file */
   private val appendablePool = mutable.HashMap[String, Appendable]()
-
-
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     context.parent ! Status.Failure(reason)
@@ -28,13 +29,13 @@ class HdfsFactory extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case GetClient =>
-      if (hdfs == null) {
-        hdfs = FileSystem.get(HadoopConfigurationHelper.getConfiguration)
+      if (hdfsClient == null) {
+        hdfsClient = FileSystem.get(HadoopConfigurationHelper.getConfiguration)
       } else {
         /* test the Client and throws Exception if don't connect */
-        hdfs.getStatus
+        hdfsClient.getStatus
       }
-      sender ! hdfs
+      sender ! hdfsClient
 
     case GetAppendable(target: String) =>
       appendablePool.get(target) match {
@@ -43,12 +44,12 @@ class HdfsFactory extends Actor with ActorLogging {
         case None =>
           val targetPath = new Path(target)
 
-          if (! hdfs.exists(targetPath)) {
-            val outStream = hdfs.create(targetPath)
+          if (! hdfsClient.exists(targetPath)) {
+            val outStream = hdfsClient.create(targetPath)
             outStream.close()
           }
 
-          val appender = hdfs.append(targetPath)
+          val appender = hdfsClient.append(targetPath)
           val io = context.actorOf(HdfsIO.props)
           val appendable = Appendable(target, appender, io)
           appendablePool += s"$target" -> appendable
@@ -64,13 +65,13 @@ class HdfsFactory extends Actor with ActorLogging {
 
   private def stopClient(): Unit = {
     if (appendablePool.nonEmpty) {
-      log.info("stopping hdfs client appenders")
+      log.info("stopping HDFS client appenders")
       appendablePool.foreach(a => a._2.appender.close())
     }
 
-    if (hdfs != null) {
-      log.info("stopping hdfs client")
-      hdfs.close()
+    if (hdfsClient != null) {
+      log.info("stopping HDFS client")
+      hdfsClient.close()
     }
   }
 
