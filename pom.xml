@@ -90,7 +90,6 @@
         </dependency>
     </dependencies>
 
-
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>
         <testSourceDirectory>src/test/scala</testSourceDirectory>
@@ -133,7 +132,6 @@
                     </execution>
                 </executions>
             </plugin>
-
 
             <!-- surefire skipping tests (using scalatest) -->
             <plugin>

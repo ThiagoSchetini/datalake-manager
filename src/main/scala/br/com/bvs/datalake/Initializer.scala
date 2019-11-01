@@ -19,7 +19,7 @@ object Initializer extends App {
   //import java.nio.file.Paths
   //val path = Paths.get("src/test/mocks").toAbsolutePath.toString
 
-  val ernesto = actorSystem.actorOf(Ernesto.props)
+  val ernesto = actorSystem.actorOf(Ernesto.props(reaper))
   ernesto ! WatchSmartContractsOn("src/test/mocks")
 
 

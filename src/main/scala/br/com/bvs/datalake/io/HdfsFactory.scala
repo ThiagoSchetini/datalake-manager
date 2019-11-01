@@ -17,12 +17,10 @@ object HdfsFactory {
 
 class HdfsFactory extends Actor with ActorLogging {
   private var hdfs: FileSystem = _
-  private var hdfsIO: ActorRef = _
+
   private val appendablePool = mutable.HashMap[String, Appendable]()
 
-  override def preStart(): Unit = {
-    hdfsIO = context.actorOf(HdfsIO.props)
-  }
+
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     context.parent ! Status.Failure(reason)

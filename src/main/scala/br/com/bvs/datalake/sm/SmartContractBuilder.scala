@@ -1,4 +1,4 @@
-package br.com.bvs.datalake.contract
+package br.com.bvs.datalake.sm
 
 import java.util.Properties
 
@@ -11,11 +11,15 @@ class SmartContractBuilder(props: Properties) {
                   props.getProperty("destinationFields").split(",").toSet,
                   props.getProperty("destinationTypes").split(",").toSet,
                   props.getProperty("fileReleasePath"),
+                  props.getProperty("smartReleasePath"),
                   props.getProperty("distributionPaths").split(",").toSet,
                   props.getProperty("versionPattern"),
-                  props.getProperty("delimiter")
+                  props.getProperty("delimiter"),
+                  props.getProperty("header")
+
     )
   }
+
 }
 
 case class SmartContract(sourceName: String,
@@ -24,8 +28,10 @@ case class SmartContract(sourceName: String,
                          sourceFields: Set[String],
                          destinationFields: Set[String],
                          destinationTypes: Set[String],
+                         smartReleasePath: String,
                          fileReleasePath: String,
                          distributionPaths: Set[String],
                          versionPattern: String,
-                         delimiter: String)
+                         delimiter: String,
+                         header: String)
 
