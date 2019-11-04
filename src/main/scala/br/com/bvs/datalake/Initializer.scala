@@ -15,7 +15,7 @@ object Initializer extends App {
 
   /* main actors */
   val reaper = actorSystem.actorOf(Reaper.props, "reaper")
-  val supervisor = actorSystem.actorOf(Supervisor.props, "supervisor")
+  val supervisor = actorSystem.actorOf(Supervisor.props(reaper), "supervisor")
 
   reaper ! WatchIt(supervisor)
 }

@@ -113,7 +113,7 @@
                 </configuration>
             </plugin>
 
-            <!-- execute shell on some phase -->
+            <!-- execute shell on some phase
             <plugin>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.6.0</version>
@@ -121,7 +121,7 @@
                 <executions>
                     <execution>
                         <id>Renaming build artifacts</id>
-                        <phase>integration-test</phase>
+                        <phase>test</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
@@ -132,6 +132,7 @@
                     </execution>
                 </executions>
             </plugin>
+            -->
 
             <!-- surefire skipping tests (using scalatest) -->
             <plugin>

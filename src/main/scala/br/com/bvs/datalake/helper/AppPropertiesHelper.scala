@@ -5,7 +5,7 @@ import java.util.Properties
 
 import scala.concurrent.duration._
 import akka.util.Timeout
-import br.com.bvs.datalake.model.SupervisorMetadata
+import br.com.bvs.datalake.model.CoreMetadata
 
 import scala.language.postfixOps
 
@@ -22,17 +22,21 @@ object AppPropertiesHelper {
     readProperties("kerberos")
   }
 
-  def getAppProps: Properties = {
-    readProperties("app")
+  private def getCoreProps: Properties = {
+    readProperties("core")
   }
 
-  def getSupervisorMetadata: SupervisorMetadata = {
-    val props = readProperties("supervisor")
+  def getCoreMetadata: CoreMetadata = {
+    val props = getCoreProps
 
-    SupervisorMetadata(
-      props.getProperty("ongoingDirectory"),
-      props.getProperty("failDirectory"),
-      Timeout(props.getProperty("hdfsClientTimeout").toInt seconds))
+    CoreMetadata(
+      props.getProperty("hadoop.conf.dir"),
+      Timeout(props.getProperty("hdfs.client.seconds.timeout").toInt seconds),
+      props.getProperty("fail.dir.name"),
+      props.getProperty("ongoing.dir.name"),
+      props.getProperty("sm.watch.dirs").split(",").toSet,
+      Timeout(props.getProperty("sm.watch.seconds.tick").toInt seconds),
+      props.getProperty("smart.contract.sufix")
+    )
   }
-
 }

@@ -10,7 +10,7 @@ object HadoopConfigurationHelper {
 
   def getConfiguration: Configuration = {
     if(lastConfiguration != null) {
-      val environment = AppPropertiesHelper.getAppProps.getProperty("HADOOP_CONF_DIR")
+      val environment = AppPropertiesHelper.getCoreMetadata.hadoopConfDir
       lastConfiguration = buildConfiguration(environment)
     }
     lastConfiguration
