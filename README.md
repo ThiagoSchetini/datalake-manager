@@ -3,11 +3,11 @@ under construction...
 
 ### requirements
 - UNIX
-- Java 8
+- JDK 8 Update 221
 - Maven 3+
 - Hadoop 2.6.0
-- MySql 5.6
 - Hive 1.1.0
+- HiveServer2 1.1.0
 - Spark 2.1.0
 
 ### how to config:
