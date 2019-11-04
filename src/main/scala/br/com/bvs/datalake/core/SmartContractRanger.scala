@@ -22,7 +22,7 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
 
   override def preStart(): Unit = {
     meta = AppPropertiesHelper.getCoreMetadata
-    hdfsIO = context.actorOf(HdfsIO.props)
+    hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
 
     meta.smWatchDirs.foreach(dir => {
       hdfsIO ! CheckOrCreateDir(hdfsClient, dir)
@@ -48,6 +48,7 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
     case DataFromFile(fileName, data) =>
       println(fileName)
       println(data)
+      println(data.toString)
       // TODO move sm to ongoing
       // TODO buildSmartContract()
       // TODO validadeSmartContract()

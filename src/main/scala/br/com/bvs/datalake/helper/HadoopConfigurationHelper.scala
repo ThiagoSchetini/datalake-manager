@@ -9,7 +9,7 @@ object HadoopConfigurationHelper {
   @volatile private var lastConfiguration: Configuration = _
 
   def getConfiguration: Configuration = {
-    if(lastConfiguration != null) {
+    if(lastConfiguration == null) {
       val environment = AppPropertiesHelper.getCoreMetadata.hadoopConfDir
       lastConfiguration = buildConfiguration(environment)
     }

@@ -1,11 +1,9 @@
 package br.com.bvs.datalake.io
 
 import java.io.{BufferedInputStream, ByteArrayInputStream, File, FileInputStream}
-
 import akka.actor.{Actor, ActorLogging, Props, Status}
 import org.apache.hadoop.fs._
 import HdfsIO._
-import akka.Done
 import br.com.bvs.datalake.helper.HadoopConfigurationHelper
 
 object HdfsIO {
@@ -73,11 +71,10 @@ class HdfsIO extends Actor with ActorLogging {
 
     case ReadFile(hdfsClient, path) =>
       if (!hdfsClient.exists(path) || !hdfsClient.isFile(path)) {
-        sender ! FileDoesNotExist(source)
+        sender ! FileDoesNotExist(path.toString)
 
       } else {
         val inStream = hdfsClient.open(path)
-        //val fileName = source.substring(source.lastIndexOf('/') + 1, source.length)
         val fileName = path.getName
         val bytes = new Array[Byte](bufferSize)
         val data = new StringBuilder
@@ -111,7 +108,5 @@ class HdfsIO extends Actor with ActorLogging {
     case CheckOrCreateDir(hdfsClient, dir) =>
       val result = hdfsClient.mkdirs(new Path(dir))
       log.info(s"$dir checked: $result")
-      //if(result)
-        //sender ! Done
   }
 }

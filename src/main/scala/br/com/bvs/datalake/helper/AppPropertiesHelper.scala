@@ -36,7 +36,7 @@ object AppPropertiesHelper {
       props.getProperty("ongoing.dir.name"),
       props.getProperty("sm.watch.dirs").split(",").toSet,
       Timeout(props.getProperty("sm.watch.seconds.tick").toInt seconds),
-      props.getProperty("smart.contract.sufix")
+      props.getProperty("sm.sufix")
     )
   }
 }

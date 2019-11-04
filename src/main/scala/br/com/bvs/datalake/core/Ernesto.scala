@@ -18,7 +18,7 @@ object Ernesto {
 
   case class WatchSmartContractsOn(dir: String)
   private case class SmartContractTick(senderActor: ActorRef, dir: String)
-  private case object SmartContractKey
+  private case class SmartContractKey(dir: String)
 }
 
 class Ernesto(hdfsClient: FileSystem) extends Actor with Timers with ActorLogging {
@@ -36,10 +36,10 @@ class Ernesto(hdfsClient: FileSystem) extends Actor with Timers with ActorLoggin
 
   override def receive: Receive = {
     case WatchSmartContractsOn(dir) =>
-      timers.startPeriodicTimer(SmartContractKey, SmartContractTick(sender, dir), meta.smWatchTick.duration)
+      timers.startPeriodicTimer(SmartContractKey(dir), SmartContractTick(sender, dir), meta.smWatchTick.duration)
 
     case SmartContractTick(senderActor, dir) =>
-      hdfsIO ! (ListFilesFrom(hdfsClient, dir), senderActor)
+      hdfsIO.tell(ListFilesFrom(hdfsClient, dir), senderActor)
   }
 
 }
