@@ -48,7 +48,6 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
     case DataFromFile(fileName, data) =>
       println(fileName)
       println(data)
-      println(data.toString)
       // TODO move sm to ongoing
       // TODO buildSmartContract()
       // TODO validadeSmartContract()

@@ -1,6 +1,8 @@
 package br.com.bvs.datalake.io
 
-import java.io.{BufferedInputStream, ByteArrayInputStream, File, FileInputStream}
+import java.io.{BufferedInputStream, BufferedReader, ByteArrayInputStream, File, FileInputStream, InputStream, InputStreamReader}
+import java.util.stream.{Collector, Collectors}
+
 import akka.actor.{Actor, ActorLogging, Props, Status}
 import org.apache.hadoop.fs._
 import HdfsIO._
@@ -56,7 +58,8 @@ class HdfsIO extends Actor with ActorLogging {
       sender ! FileUploaded
 
     case Append(target, appender, data) =>
-      val inBuffer = new BufferedInputStream(new ByteArrayInputStream(data.toString().getBytes()))
+      val inStream = new ByteArrayInputStream(data.toString().getBytes())
+      val inBuffer = new BufferedInputStream(inStream)
       val bytes = new Array[Byte](bufferSize)
 
       var numBytes = inBuffer.read(bytes)
@@ -66,6 +69,7 @@ class HdfsIO extends Actor with ActorLogging {
       }
 
       inBuffer.close()
+      inStream.close()
       sender ! Appended(target)
       /* warning: do not close the appender, it's done by pool */
 
@@ -75,16 +79,17 @@ class HdfsIO extends Actor with ActorLogging {
 
       } else {
         val inStream = hdfsClient.open(path)
+        val inBuffer = new BufferedReader(new InputStreamReader(inStream))
         val fileName = path.getName
-        val bytes = new Array[Byte](bufferSize)
         val data = new StringBuilder
 
-        var numBytes = inStream.read(bytes)
-        while (numBytes > 0) {
-          data.append(bytes.toString)
-          numBytes = inStream.read(bytes)
+        var line: String = inBuffer.readLine
+        while (line != null) {
+          data.append(line).append("\n")
+          line = inBuffer.readLine
         }
 
+        inBuffer.close()
         inStream.close()
         sender ! DataFromFile(fileName, data.mkString)
       }

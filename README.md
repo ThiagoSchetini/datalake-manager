@@ -45,3 +45,4 @@ Open "Run/Debug Configurations":
 
 ### references
 Cassandra https://medium.com/rahasak/scala-cake-pattern-e0cd894dae4e
+Docker Compose: https://carledwinti.wordpress.com/2019/11/02/instalar-o-docker-no-ubuntu-19-10/
