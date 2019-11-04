@@ -1,7 +1,8 @@
 package br.com.bvs.datalake.core
 
 import java.io.ByteArrayInputStream
-import java.util.Properties
+import java.util.{Calendar, Properties}
+
 import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import br.com.bvs.datalake.core.Ernesto.WatchSmartContractsOn
@@ -51,13 +52,11 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
       props.load(new ByteArrayInputStream(data.toString.getBytes()))
 
       val sm = buildSmartContract(props)
-      println("sm built")
-      println(sm)
-      // TODO validadeSmartContract
+      // TODO validadeSmartContract(sm)
+      // TODO if not valid move to failed
+      // TODO if valid, continue:
+      // TODO move sm to ongoing
       val smSerialized = serializeSmartContract(fileName, sm)
-      println("sm serialized")
-      println(smSerialized)
-      // TODO move sm to ongoing or to fail
 
 
     // TODO create case that, when transaction finishes the sm Serialized goes to HDFS
@@ -89,8 +88,7 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
     val smBuilder = new StringBuilder()
 
     smBuilder.append(
-      s"""$fileName
-         |${sm.sourceName}
+      s"""${sm.sourceName}
          |${sm.sourceServer}
          |${sm.sourcePath}
          |${sm.sourceFields}
@@ -101,7 +99,10 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
          |${sm.distributionPaths}
          |${sm.versionPattern}
          |${sm.delimiter}
-         |${sm.header}""".stripMargin.replaceAll(newline, meta.smDelimiter.toString)).append(newline)
+         |${sm.header}
+         |$fileName
+         |${Calendar.getInstance.getTime}"""
+        .stripMargin.replaceAll(newline, meta.smDelimiter.toString)).append(newline)
 
     smBuilder.mkString
   }
