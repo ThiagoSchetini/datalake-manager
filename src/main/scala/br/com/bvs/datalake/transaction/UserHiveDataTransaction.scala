@@ -18,12 +18,12 @@ class UserHiveDataTransaction(path: Path, sm: SmartContract) extends Actor with 
 
   override def receive: Receive = {
     case Start => {
-      log.info(s"Starting transaction: ${path.getName}")
+      log.info(s"start: ${path.getName}")
+
     }
 
     case Failure(e) => {
       println(e.getMessage)
-      // TODO move sm to fail and create a file with the exception
       log.info(s"Transaction failed for: ${path.getName}")
     }
 

@@ -66,11 +66,10 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
       // TODO if not valid move to failed
       // TODO if valid, continue:
 
+      hdfsIO ! MoveToSubDir(hdfsClient, path, meta.ongoingDirName)
+
       val transaction = context.actorOf(UserHiveDataTransaction.props(path, sm))
       ongoingSm += path -> (transaction, serializeSmartContract(path.getName, sm))
-
-
-      hdfsIO ! MoveToSubDir(hdfsClient, path, meta.ongoingDirName)
       transaction ! Start
 
     case HiveDataOk(path) =>
