@@ -30,6 +30,7 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
       hdfsIO ! CheckOrCreateDir(hdfsClient, dir)
       hdfsIO ! CheckOrCreateDir(hdfsClient, s"$dir/${meta.failDirName}")
       hdfsIO ! CheckOrCreateDir(hdfsClient, s"$dir/${meta.ongoingDirName}")
+      hdfsIO ! CheckOrCreateDir(hdfsClient, s"$dir/${meta.doneDirName}")
       ernesto ! WatchSmartContractsOn(dir)
     })
   }

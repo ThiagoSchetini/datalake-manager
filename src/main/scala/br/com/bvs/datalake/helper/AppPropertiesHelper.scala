@@ -34,6 +34,7 @@ object AppPropertiesHelper {
       Timeout(props.getProperty("hdfs.client.seconds.timeout").toInt seconds),
       props.getProperty("fail.dir.name"),
       props.getProperty("ongoing.dir.name"),
+      props.getProperty("done.dir.name"),
       props.getProperty("sm.watch.dirs").split(",").toSet,
       Timeout(props.getProperty("sm.watch.seconds.tick").toInt seconds),
       props.getProperty("sm.sufix"),
