@@ -26,6 +26,8 @@ object HdfsIO {
   case class PathsList(paths: List[Path])
 
   case class CheckOrCreateDir(hdfsClient: FileSystem, dir: String)
+
+  case class MoveToSubDir(hdfsClient: FileSystem, sourcePath: Path, target: String)
 }
 
 class HdfsIO extends Actor with ActorLogging {
@@ -112,5 +114,12 @@ class HdfsIO extends Actor with ActorLogging {
     case CheckOrCreateDir(hdfsClient, dir) =>
       val result = hdfsClient.mkdirs(new Path(dir))
       log.info(s"$dir checked: $result")
+
+    case MoveToSubDir(hdfsClient, sourcePath, sub) =>
+      val fileName = sourcePath.getName
+      val root = sourcePath.getParent
+      val targetPath = new Path(s"$root/$sub/$fileName")
+      hdfsClient.rename(sourcePath, targetPath)
+      log.info(s"$fileName moved to $root/$sub")
   }
 }

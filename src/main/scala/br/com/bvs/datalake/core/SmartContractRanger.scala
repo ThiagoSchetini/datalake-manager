@@ -8,11 +8,12 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import br.com.bvs.datalake.core.Ernesto.WatchSmartContractsOn
 import br.com.bvs.datalake.helper.AppPropertiesHelper
 import br.com.bvs.datalake.io.HdfsIO
-import br.com.bvs.datalake.io.HdfsIO.{CheckOrCreateDir, DataFromFile, PathsList, ReadFile}
+import br.com.bvs.datalake.io.HdfsIO._
 import br.com.bvs.datalake.model.{CoreMetadata, SmartContract}
 import br.com.bvs.datalake.transaction.UserHiveDataTransaction
 import br.com.bvs.datalake.transaction.UserHiveDataTransaction.{HiveDataFailed, HiveDataOk, Start}
 import org.apache.hadoop.fs.{FileSystem, Path}
+
 import scala.collection.mutable
 
 object SmartContractRanger {
@@ -63,25 +64,27 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
       // TODO if not valid move to failed
       // TODO if valid, continue:
 
-      // TODO move original sm to ongoing
       val transaction = context.actorOf(UserHiveDataTransaction.props(path, sm))
-      val smSerialized = serializeSmartContract(path.getName, sm)
-      println("serialized sm:")
-      println(smSerialized)
-      ongoingSm += path -> (transaction, smSerialized)
+      ongoingSm += path -> (transaction, serializeSmartContract(path.getName, sm))
+
+      hdfsIO ! MoveToSubDir(hdfsClient, path, meta.ongoingDirName)
       transaction ! Start
 
     case HiveDataOk(path) =>
       val source = s"path.toString/${meta.ongoingDirName}"
       val target = s"path.toString/${meta.doneDirName}"
       // TODO move sm original file to HDFS on done.dir.name
-      ongoingSm.remove(path)
+      // TODO get appender, put the serialized line to HDFSIO file
+      // TODO context.stop(transaction)
+      // TODO ongoingSm.remove(path)
 
     case HiveDataFailed(path) =>
       val source = s"path.toString/${meta.ongoingDirName}"
       val target = s"path.toString/${meta.failDirName}"
       // TODO move sm original file to HDFS on fail.dir.name
-      ongoingSm.remove(path)
+      // TODO context.stop(transaction)
+      // TODO ongoingSm.remove(path)
+      // TODO ongoingSm.remove(path)
 
   }
 
