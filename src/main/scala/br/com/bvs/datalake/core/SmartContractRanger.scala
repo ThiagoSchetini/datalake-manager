@@ -2,7 +2,6 @@ package br.com.bvs.datalake.core
 
 import java.io.ByteArrayInputStream
 import java.util.{Calendar, Properties}
-
 import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import br.com.bvs.datalake.core.Ernesto.WatchSmartContractsOn
@@ -38,6 +37,9 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
       hdfsIO ! CheckOrCreateDir(hdfsClient, s"$dir/${meta.ongoingDirName}")
       hdfsIO ! CheckOrCreateDir(hdfsClient, s"$dir/${meta.doneDirName}")
       ernesto ! WatchSmartContractsOn(dir)
+
+      /* only first runtime check on ongoing */
+      hdfsIO ! ListFilesFrom(hdfsClient, s"$dir/${meta.ongoingDirName}")
     })
   }
 
@@ -66,6 +68,7 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
 
       val transaction = context.actorOf(UserHiveDataTransaction.props(path, sm))
       ongoingSm += path -> (transaction, serializeSmartContract(path.getName, sm))
+
 
       hdfsIO ! MoveToSubDir(hdfsClient, path, meta.ongoingDirName)
       transaction ! Start
