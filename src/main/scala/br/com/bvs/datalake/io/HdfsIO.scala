@@ -19,7 +19,7 @@ object HdfsIO {
 
   case class ReadFile(hdfsClient: FileSystem, path: Path)
   case class FileDoesNotExist(source: String)
-  case class DataFromFile(fileName: String, data: String)
+  case class DataFromFile(path: Path, data: String)
 
   case class ListFilesFrom(hdfsClient: FileSystem, source: String)
   case class DirectoryDoesNotExist(source: String)
@@ -80,7 +80,6 @@ class HdfsIO extends Actor with ActorLogging {
       } else {
         val inStream = hdfsClient.open(path)
         val inBuffer = new BufferedReader(new InputStreamReader(inStream))
-        val fileName = path.getName
         val data = new StringBuilder
 
         var line: String = inBuffer.readLine
@@ -91,7 +90,7 @@ class HdfsIO extends Actor with ActorLogging {
 
         inBuffer.close()
         inStream.close()
-        sender ! DataFromFile(fileName, data.mkString)
+        sender ! DataFromFile(path, data.mkString)
       }
 
     case ListFilesFrom(hdfsClient, source) =>

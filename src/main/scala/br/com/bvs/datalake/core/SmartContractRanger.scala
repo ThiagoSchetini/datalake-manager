@@ -10,7 +10,10 @@ import br.com.bvs.datalake.helper.AppPropertiesHelper
 import br.com.bvs.datalake.io.HdfsIO
 import br.com.bvs.datalake.io.HdfsIO.{CheckOrCreateDir, DataFromFile, PathsList, ReadFile}
 import br.com.bvs.datalake.model.{CoreMetadata, SmartContract}
-import org.apache.hadoop.fs.FileSystem
+import br.com.bvs.datalake.transaction.UserHiveDataTransaction
+import br.com.bvs.datalake.transaction.UserHiveDataTransaction.{HiveDataFailed, HiveDataOk, Start}
+import org.apache.hadoop.fs.{FileSystem, Path}
+import scala.collection.mutable
 
 object SmartContractRanger {
   def props(hdfsClient: FileSystem, ernesto: ActorRef): Props = Props(new SmartContractRanger(hdfsClient, ernesto))
@@ -19,10 +22,12 @@ object SmartContractRanger {
 }
 
 class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Actor with ActorLogging {
+  var ongoingSm: mutable.HashMap[Path, (ActorRef, String)] = _
   var meta: CoreMetadata = _
   var hdfsIO: ActorRef = _
 
   override def preStart(): Unit = {
+    ongoingSm = new mutable.HashMap[Path, (ActorRef, String)]()
     meta = AppPropertiesHelper.getCoreMetadata
     hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
 
@@ -48,19 +53,35 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
           })
       }
 
-    case DataFromFile(fileName, data) =>
+    case DataFromFile(path, data) =>
       val props = new Properties()
       props.load(new ByteArrayInputStream(data.toString.getBytes()))
 
       val sm = buildSmartContract(props)
+
       // TODO validadeSmartContract(sm)
       // TODO if not valid move to failed
       // TODO if valid, continue:
-      // TODO move sm to ongoing
-      val smSerialized = serializeSmartContract(fileName, sm)
 
+      // TODO move original sm to ongoing
+      val transaction = context.actorOf(UserHiveDataTransaction.props(path, sm))
+      val smSerialized = serializeSmartContract(path.getName, sm)
+      println("serialized sm:")
+      println(smSerialized)
+      ongoingSm += path -> (transaction, smSerialized)
+      transaction ! Start
 
-    // TODO create case that, when transaction finishes the sm Serialized goes to HDFS
+    case HiveDataOk(path) =>
+      val source = s"path.toString/${meta.ongoingDirName}"
+      val target = s"path.toString/${meta.doneDirName}"
+      // TODO move sm original file to HDFS on done.dir.name
+      ongoingSm.remove(path)
+
+    case HiveDataFailed(path) =>
+      val source = s"path.toString/${meta.ongoingDirName}"
+      val target = s"path.toString/${meta.failDirName}"
+      // TODO move sm original file to HDFS on fail.dir.name
+      ongoingSm.remove(path)
 
   }
 
