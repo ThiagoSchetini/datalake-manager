@@ -7,17 +7,23 @@ import java.sql.ResultSet
 import java.sql.Statement
 import java.sql.DriverManager
 
-import br.com.bvs.datalake.io.HiveConnectionFactory.GetHiveConnection
+import br.com.bvs.datalake.helper.CorePropertiesHelper
+import br.com.bvs.datalake.io.HiveServer2Factory.GetHiveConnection
+import br.com.bvs.datalake.model.CoreMetadata
 
-object HiveConnectionFactory {
-  val props: Props = Props(new HiveConnectionFactory)
+object HiveServer2Factory {
+  val props: Props = Props(new HiveServer2Factory)
 
   case object GetHiveConnection
 }
 
-class HiveConnectionFactory extends Actor with ActorLogging{
-  private val driverName = "org.apache.hive.jdbc.HiveDriver"
+class HiveServer2Factory extends Actor with ActorLogging{
+  private var meta: CoreMetadata = _
   private var hiveConnection: Connection = _
+
+  override def preStart(): Unit = {
+    meta = CorePropertiesHelper.getCoreMetadata
+  }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     sender ! Status.Failure(reason)
@@ -26,8 +32,8 @@ class HiveConnectionFactory extends Actor with ActorLogging{
   override def receive: Receive = {
     case GetHiveConnection =>
       if (hiveConnection == null) {
-        Class.forName(driverName)
-        hiveConnection = DriverManager.getConnection("jdbc:hive2://localhost:10000/default", "hive", "")
+        Class.forName(meta.hiveDriverName)
+        hiveConnection = DriverManager.getConnection(meta.hiveServer2URL)
 
       } else {
         /* test the connection and throws Exception if don't connect */

@@ -1,19 +1,17 @@
 package br.com.bvs.datalake.core
 
 import java.sql.Connection
-
 import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 import akka.pattern.ask
 import br.com.bvs.datalake.core.Reaper.Reap
 import org.apache.hadoop.fs.FileSystem
-
 import scala.concurrent.Await
-import br.com.bvs.datalake.helper.AppPropertiesHelper
-import br.com.bvs.datalake.io.{HdfsClientPool, HiveConnectionFactory}
-import br.com.bvs.datalake.io.HdfsClientPool.GetHDFSClient
-import br.com.bvs.datalake.io.HiveConnectionFactory.GetHiveConnection
+import br.com.bvs.datalake.helper.CorePropertiesHelper
+import br.com.bvs.datalake.io.{HdfsPool, HiveServer2Factory}
+import br.com.bvs.datalake.io.HdfsPool.GetHDFSClient
+import br.com.bvs.datalake.io.HiveServer2Factory.GetHiveConnection
 
 object Supervisor {
   def props(reaper: ActorRef): Props = Props(new Supervisor(reaper))
@@ -28,14 +26,13 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
   private var ernesto: ActorRef = _
 
   override def preStart(): Unit = {
-    hdfsClientPool = context.actorOf(HdfsClientPool.props)
-    hiveConnectionFactory = context.actorOf(HiveConnectionFactory.props)
-
-    implicit val timeout: Timeout = AppPropertiesHelper.getCoreMetadata.hdfsClientTimeout
+    implicit val clientTimeout: Timeout = CorePropertiesHelper.getCoreMetadata.clientTimeout
+    hdfsClientPool = context.actorOf(HdfsPool.props)
+    hiveConnectionFactory = context.actorOf(HiveServer2Factory.props)
 
     val futureHDFSClient = hdfsClientPool ? GetHDFSClient
     try {
-      hdfsClient = Await.result(futureHDFSClient, timeout.duration).asInstanceOf[FileSystem]
+      hdfsClient = Await.result(futureHDFSClient, clientTimeout.duration).asInstanceOf[FileSystem]
       log.info("HDFS client created")
     } catch {
       case e: Exception =>
@@ -45,7 +42,7 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
 
     val futureHiveConnection = hiveConnectionFactory ? GetHiveConnection
     try {
-      hiveConnection = Await.result(futureHiveConnection, timeout.duration).asInstanceOf[Connection]
+      hiveConnection = Await.result(futureHiveConnection, clientTimeout.duration).asInstanceOf[Connection]
       log.info("Hive connection created")
     } catch {
       case e: Exception =>

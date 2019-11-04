@@ -9,7 +9,7 @@ import br.com.bvs.datalake.model.CoreMetadata
 
 import scala.language.postfixOps
 
-object AppPropertiesHelper {
+object CorePropertiesHelper {
   private val appPropertiesPath = sys.env.get("DATALAKE_MANAGER_PROPS").mkString
 
   private def readProperties(name: String) = {
@@ -30,8 +30,10 @@ object AppPropertiesHelper {
     val props = getCoreProps
 
     CoreMetadata(
+      Timeout(props.getProperty("client.seconds.timeout").toInt seconds),
       props.getProperty("hadoop.conf.dir"),
-      Timeout(props.getProperty("hdfs.client.seconds.timeout").toInt seconds),
+      props.getProperty("hive.driver.name"),
+      props.getProperty("hiveserver2.connection.url"),
       props.getProperty("fail.dir.name"),
       props.getProperty("ongoing.dir.name"),
       props.getProperty("done.dir.name"),

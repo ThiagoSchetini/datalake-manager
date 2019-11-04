@@ -10,7 +10,7 @@ object HadoopConfigurationHelper {
 
   def getConfiguration: Configuration = {
     if(lastConfiguration == null) {
-      val environment = AppPropertiesHelper.getCoreMetadata.hadoopConfDir
+      val environment = CorePropertiesHelper.getCoreMetadata.hadoopConfDir
       lastConfiguration = buildConfiguration(environment)
     }
     lastConfiguration
@@ -34,7 +34,7 @@ object HadoopConfigurationHelper {
       .foreach(f => configuration.addResource(new FileInputStream(f)))
 
     if (configuration.get("hadoop.security.authentication") == "kerberos") {
-      val props = AppPropertiesHelper.getKerberosProps
+      val props = CorePropertiesHelper.getKerberosProps
       val user = props.getProperty("user")
       val keytab = props.getProperty("keytab")
       UserGroupInformation.setConfiguration(configuration)

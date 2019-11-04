@@ -5,17 +5,17 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
 import scala.collection.mutable
 import br.com.bvs.datalake.helper.HadoopConfigurationHelper
-import HdfsClientPool._
+import HdfsPool._
 
-object HdfsClientPool {
-  def props: Props = Props(new HdfsClientPool)
+object HdfsPool {
+  def props: Props = Props(new HdfsPool)
   case class Appendable(target: String, appender: FSDataOutputStream, hdfsIO: ActorRef)
   case object GetHDFSClient
   case class GetAppendable(target: String)
   case class HereGoesTheAppendable(appendable: Appendable)
 }
 
-class HdfsClientPool extends Actor with ActorLogging {
+class HdfsPool extends Actor with ActorLogging {
 
   /* one unique client to application */
   private var hdfsClient: FileSystem = _

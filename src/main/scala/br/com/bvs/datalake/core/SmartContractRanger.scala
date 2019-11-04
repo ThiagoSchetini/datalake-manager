@@ -5,7 +5,7 @@ import java.util.{Calendar, Properties}
 import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import br.com.bvs.datalake.core.Ernesto.WatchSmartContractsOn
-import br.com.bvs.datalake.helper.AppPropertiesHelper
+import br.com.bvs.datalake.helper.CorePropertiesHelper
 import br.com.bvs.datalake.io.HdfsIO
 import br.com.bvs.datalake.io.HdfsIO._
 import br.com.bvs.datalake.model.{CoreMetadata, SmartContract}
@@ -22,13 +22,13 @@ object SmartContractRanger {
 }
 
 class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Actor with ActorLogging {
-  var ongoingSm: mutable.HashMap[Path, (ActorRef, String)] = _
-  var meta: CoreMetadata = _
-  var hdfsIO: ActorRef = _
+  private var ongoingSm: mutable.HashMap[Path, (ActorRef, String)] = _
+  private var meta: CoreMetadata = _
+  private var hdfsIO: ActorRef = _
 
   override def preStart(): Unit = {
     ongoingSm = new mutable.HashMap[Path, (ActorRef, String)]()
-    meta = AppPropertiesHelper.getCoreMetadata
+    meta = CorePropertiesHelper.getCoreMetadata
     hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
 
     meta.smWatchDirs.foreach(dir => {
