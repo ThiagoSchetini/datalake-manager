@@ -8,4 +8,5 @@ final case class CoreMetadata(hadoopConfDir: String,
                               ongoingDirName: String,
                               smWatchDirs: Set[String],
                               smWatchTick: Timeout,
-                              smSufix: String)
+                              smSufix: String,
+                              smDelimiter: String)

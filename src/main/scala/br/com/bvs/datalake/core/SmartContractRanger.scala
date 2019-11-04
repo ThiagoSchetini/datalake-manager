@@ -1,5 +1,6 @@
 package br.com.bvs.datalake.core
 
+import java.io.ByteArrayInputStream
 import java.util.Properties
 import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
@@ -46,12 +47,21 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
       }
 
     case DataFromFile(fileName, data) =>
-      println(fileName)
-      println(data)
-      // TODO move sm to ongoing
-      // TODO buildSmartContract()
-      // TODO validadeSmartContract()
-      // TODO serializeSmartContract()
+      val props = new Properties()
+      props.load(new ByteArrayInputStream(data.toString.getBytes()))
+
+      val sm = buildSmartContract(props)
+      println("sm built")
+      println(sm)
+      // TODO validadeSmartContract
+      val smSerialized = serializeSmartContract(fileName, sm)
+      println("sm serialized")
+      println(smSerialized)
+      // TODO move sm to ongoing or to fail
+
+
+    // TODO create case that, when transaction finishes the sm Serialized goes to HDFS
+
   }
 
   private def buildSmartContract(props: Properties): SmartContract = {
@@ -74,8 +84,26 @@ class SmartContractRanger(hdfsClient: FileSystem, ernesto: ActorRef) extends Act
     ???
   }
 
-  private def serializeSmartContract(sm: SmartContract): String = {
-    ???
+  private def serializeSmartContract(fileName: String, sm: SmartContract): String = {
+    val newline = "\n"
+    val smBuilder = new StringBuilder()
+
+    smBuilder.append(
+      s"""$fileName
+         |${sm.sourceName}
+         |${sm.sourceServer}
+         |${sm.sourcePath}
+         |${sm.sourceFields}
+         |${sm.destinationFields}
+         |${sm.destinationTypes}
+         |${sm.smartReleasePath}
+         |${sm.fileReleasePath}
+         |${sm.distributionPaths}
+         |${sm.versionPattern}
+         |${sm.delimiter}
+         |${sm.header}""".stripMargin.replaceAll(newline, meta.smDelimiter.toString)).append(newline)
+
+    smBuilder.mkString
   }
 
 }

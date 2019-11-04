@@ -12,14 +12,13 @@ under construction...
 
 ### how to config:
 On src/main/resources/core.properties, put a valid hadoop configuration directory:
-`hadoop.conf.dir=/your/hadoop/env/config`
 
+`hadoop.conf.dir=/your/hadoop/env/config`
 
 ### how to run:
 From the root folder, run: 
-```
-sh execute.sh
-```
+
+`sh execute.sh`
 
 ### Tuning JVM for production:
 Use this flags on JVM to optimize young generation memory and make it elastic to OS:
@@ -45,4 +44,5 @@ Open "Run/Debug Configurations":
 
 ### references
 Cassandra https://medium.com/rahasak/scala-cake-pattern-e0cd894dae4e
+
 Docker Compose: https://carledwinti.wordpress.com/2019/11/02/instalar-o-docker-no-ubuntu-19-10/
