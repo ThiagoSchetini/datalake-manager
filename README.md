@@ -2,13 +2,15 @@
 under construction...
 
 ### requirements
-- UNIX
-- JDK 8 Update 221
-- Maven 3+
-- Hadoop 2.6.0
-- Hive 1.1.0
-- HiveServer2 1.1.0
-- Spark 2.1.0
+Up and running non kerberos environment:
+
+    - UNIX
+    - JDK 8 Update 221
+    - Maven 3+
+    - Hadoop 2.6.0
+    - Hive 1.1.0
+    - HiveServer2 1.1.0
+    - Spark 2.1.0
 
 ### how to config:
 On src/main/resources/core.properties, put a valid hadoop configuration directory:
