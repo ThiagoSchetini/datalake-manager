@@ -37,7 +37,9 @@ class HiveServer2Factory extends Actor with ActorLogging{
 
       } else {
         /* test the connection and throws Exception if don't connect */
-
+        val stmt = hiveConnection.createStatement
+        val tableName = "testdb.types"
+        // https://cwiki.apache.org/confluence/display/Hive/HiveServer2+Clients#HiveServer2Clients-JDBC
       }
       sender ! hiveConnection
   }

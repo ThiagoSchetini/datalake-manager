@@ -17,3 +17,20 @@ hdfs dfs -copyFromLocal -f ${sm1} ${smBox1}
 hdfs dfs -copyFromLocal -f ${sm2} ${smBox2}
 hdfs dfs -copyFromLocal -f ${sm3} ${smBox1Ongoing}
 hdfs dfs -copyFromLocal -f ${sm4} ${smBox2Ongoing}
+
+echo "[INFO] preparing HIVE for br.com.bvs.datalake.transaction.UserHiveDataTransaction"
+TableTypesLocation=/br/com/bvs/datalake/transaction/UserHiveDataTransaction/TableTypes
+hdfs dfs -mkdir -p ${TableTypesLocation}
+hive -e "create database if not exists testdb;"
+hive -e "create external table if not exists testdb.types (\
+TINY_NUM TINYINT,\
+SMALL_NUM SMALLINT,\
+NUM INT,\
+BIG_NUM BIGINT,\
+FLOAT_NUM FLOAT,\
+DOUBLE_NUM DOUBLE,\
+DECIMAL_NUM DECIMAL,\
+BOOLEAN_FIELD BOOLEAN,\
+STRING_FIELD STRING,\
+TIMESTAMP_FIELD TIMESTAMP) \
+LOCATION hdfs://localhost:9000${TableTypesLocation}"
