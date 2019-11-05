@@ -52,22 +52,6 @@ class HivePool extends Actor with ActorLogging{
       log.info(s"total pool available connections: ${connPool.size}")
       log.info(s"total pool using connections: ${connBusy.size}")
 
-      /*
-      hiveConnection = DriverManager.getConnection(meta.hiveServer2URL)
-
-      /* test the connection and throws Exception if don't connect */
-      val stmt = hiveConnection.createStatement
-      val tableName = "testdb.types"
-      stmt.execute("drop table if exists " + tableName)
-      stmt.execute("create table " + tableName + " (key int, value string)")
-      val sql = "select * from "+ tableName
-      println("Running: " + sql)
-      val res = stmt.executeQuery(sql)
-      println("query OK!")
-      println(res)
-      */
-
-
     case DisposeConnection(conn: Connection) =>
       connBusy -= conn
       connPool += conn
