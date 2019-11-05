@@ -46,19 +46,6 @@ class HiveServer2Factory extends Actor with ActorLogging{
         println("query OK!")
         println(res)
 
-      } else {
-        /* test the connection and throws Exception if don't connect */
-        val stmt = hiveConnection.createStatement
-        val tableName = "testdb.types"
-        stmt.execute("drop table if exists " + tableName)
-        stmt.execute("create table " + tableName + " (key int, value string)")
-        val sql = "select * from "+ tableName
-        println("Running: " + sql)
-        val res = stmt.executeQuery(sql)
-        println("query OK!")
-        println(res)
-
-        // https://cwiki.apache.org/confluence/display/Hive/HiveServer2+Clients#HiveServer2Clients-JDBC
       }
       sender ! hiveConnection
   }

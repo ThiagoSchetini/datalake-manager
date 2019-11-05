@@ -15,14 +15,17 @@ Up and running non kerberos environment:
 ### how to config:
 Open src/main/resources/core.properties
 
-Put a valid hadoop configuration directory:
+Change to a valid hadoop configuration directory:
+
 `hadoop.conf.dir=/your/hadoop/env/config`
 
-Put your OS username:
+Change with your OS username:
+
 `hiveserver2.url=jdbc:hive2://localhost:10000/;user=username`
 
 ### how to run:
 From the root folder, run: 
+
 `sh execute.sh`
 
 ### Tuning JVM for production:
@@ -51,3 +54,5 @@ Open "Run/Debug Configurations":
 Cassandra https://medium.com/rahasak/scala-cake-pattern-e0cd894dae4e
 
 Docker Compose: https://carledwinti.wordpress.com/2019/11/02/instalar-o-docker-no-ubuntu-19-10/
+
+HiveServer2: https://cwiki.apache.org/confluence/display/Hive/HiveServer2+Clients#HiveServer2Clients-JDBC
