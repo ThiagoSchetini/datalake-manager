@@ -13,13 +13,16 @@ Up and running non kerberos environment:
     - Spark 2.1.0
 
 ### how to config:
-On src/main/resources/core.properties, put a valid hadoop configuration directory:
+Open src/main/resources/core.properties
 
+Put a valid hadoop configuration directory:
 `hadoop.conf.dir=/your/hadoop/env/config`
+
+Put your OS username:
+`hiveserver2.url=jdbc:hive2://localhost:10000/;user=username`
 
 ### how to run:
 From the root folder, run: 
-
 `sh execute.sh`
 
 ### Tuning JVM for production:
