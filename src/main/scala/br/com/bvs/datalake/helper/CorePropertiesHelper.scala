@@ -33,7 +33,7 @@ object CorePropertiesHelper {
       Timeout(props.getProperty("client.seconds.timeout").toInt seconds),
       props.getProperty("hadoop.conf.dir"),
       props.getProperty("hive.driver.name"),
-      props.getProperty("hiveserver2.connection.url"),
+      props.getProperty("hiveserver2.url"),
       props.getProperty("fail.dir.name"),
       props.getProperty("ongoing.dir.name"),
       props.getProperty("done.dir.name"),
