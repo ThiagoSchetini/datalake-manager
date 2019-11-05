@@ -21,7 +21,6 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
   private var hdfsClientPool: ActorRef = _
   private var hiveConnectionFactory: ActorRef = _
   private var hdfsClient: FileSystem = _
-  private var hiveConnection: Connection = _
   private var smRanger: ActorRef = _
   private var ernesto: ActorRef = _
 
@@ -37,16 +36,6 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
     } catch {
       case e: Exception =>
         log.error(s"couldn't create HDFS client: ${e.getMessage}")
-        reaper ! Reap
-    }
-
-    val futureHiveConnection = hiveConnectionFactory ? GetHiveConnection
-    try {
-      hiveConnection = Await.result(futureHiveConnection, clientTimeout.duration).asInstanceOf[Connection]
-
-    } catch {
-      case e: Exception =>
-        log.error(s"couldn't create Hive connection: ${e.getMessage}")
         reaper ! Reap
     }
 
