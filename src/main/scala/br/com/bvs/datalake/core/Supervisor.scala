@@ -9,9 +9,9 @@ import br.com.bvs.datalake.core.Reaper.Reap
 import org.apache.hadoop.fs.FileSystem
 import scala.concurrent.Await
 import br.com.bvs.datalake.helper.CorePropertiesHelper
-import br.com.bvs.datalake.io.{HdfsPool, HiveServer2Factory}
+import br.com.bvs.datalake.io.{HdfsPool, HivePool}
 import br.com.bvs.datalake.io.HdfsPool.GetHDFSClient
-import br.com.bvs.datalake.io.HiveServer2Factory.GetHiveConnection
+import br.com.bvs.datalake.io.HivePool.GetHiveConnection
 
 object Supervisor {
   def props(reaper: ActorRef): Props = Props(new Supervisor(reaper))
@@ -28,7 +28,7 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
   override def preStart(): Unit = {
     implicit val clientTimeout: Timeout = CorePropertiesHelper.getCoreMetadata.clientTimeout
     hdfsClientPool = context.actorOf(HdfsPool.props)
-    hiveConnectionFactory = context.actorOf(HiveServer2Factory.props)
+    hiveConnectionFactory = context.actorOf(HivePool.props)
 
     val futureHDFSClient = hdfsClientPool ? GetHDFSClient
     try {
@@ -43,7 +43,7 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
     val futureHiveConnection = hiveConnectionFactory ? GetHiveConnection
     try {
       hiveConnection = Await.result(futureHiveConnection, clientTimeout.duration).asInstanceOf[Connection]
-      log.info("Hive connection created")
+
     } catch {
       case e: Exception =>
         log.error(s"couldn't create Hive connection: ${e.getMessage}")

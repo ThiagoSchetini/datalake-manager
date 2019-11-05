@@ -4,8 +4,8 @@ import akka.util.Timeout
 
 final case class CoreMetadata(clientTimeout: Timeout,
                               hadoopConfDir: String,
-                              hiveDriverName: String,
                               hiveServer2URL: String,
+                              hiveServer2PoolFactor: Int,
                               failDirName: String,
                               ongoingDirName: String,
                               doneDirName: String,

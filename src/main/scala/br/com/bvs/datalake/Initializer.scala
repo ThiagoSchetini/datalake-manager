@@ -10,6 +10,9 @@ object Initializer extends App {
   /* start it all ... */
   TextUtil.printWelcome()
 
+  /* registration required for legacy Hive/Driver */
+  Class.forName("org.apache.hive.jdbc.HiveDriver")
+
   /* the system */
   implicit val actorSystem: ActorSystem = ActorSystem("datalake-manager")
 
