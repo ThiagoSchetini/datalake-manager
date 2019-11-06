@@ -96,20 +96,22 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
   }
 
   private def buildSmartContract(props: Properties): SmartContract = {
-    SmartContract(props.getProperty("sourceName"),
+    SmartContract(
+      props.getProperty("sourceName"),
       props.getProperty("sourceServer"),
       props.getProperty("sourcePath"),
-      props.getProperty("sourceFields").split(",").toSet,
-      props.getProperty("destinationFields").split(",").toSet,
-      props.getProperty("destinationTypes").split(",").toSet,
+      props.getProperty("sourceFields").split(",").toList,
+      props.getProperty("destinationFields").split(",").toList,
+      props.getProperty("destinationTypes").split(",").toList,
       props.getProperty("fileReleasePath"),
       props.getProperty("smartReleasePath"),
       props.getProperty("distributionPaths").split(",").toSet,
       props.getProperty("versionPattern"),
       props.getProperty("delimiter"),
-      props.getProperty("header"),
+      props.getProperty("header").toBoolean,
       props.getProperty("database"),
-      props.getProperty("table")
+      props.getProperty("table"),
+      props.getProperty("overwrite").toBoolean
     )
   }
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "[INFO] preparing sm.watch.dirs for br.com.bvs.datalake.core.SmartContractRanger"
+echo "[INFO] preparing files: br.com.bvs.datalake.core.SmartContractRanger"
 smBox1=/br/com/bvs/datalake/core/SmartContractRanger/SmartContractsBox1
 smBox2=/br/com/bvs/datalake/core/SmartContractRanger/SmartContractsBox2
 smBox1Ongoing=/br/com/bvs/datalake/core/SmartContractRanger/SmartContractsBox1/ongoing
@@ -11,6 +11,8 @@ sm3=src/test/mocks/sm/sm3.properties
 sm4=src/test/mocks/sm/sm4.properties
 hdfs dfs -mkdir -p ${smBox1}
 hdfs dfs -mkdir -p ${smBox2}
+hdfs dfs -rm -R -skipTrash ${smBox1Ongoing}
+hdfs dfs -rm -R -skipTrash ${smBox2Ongoing}
 hdfs dfs -mkdir -p ${smBox1Ongoing}
 hdfs dfs -mkdir -p ${smBox2Ongoing}
 hdfs dfs -copyFromLocal -f ${sm1} ${smBox1}
@@ -18,7 +20,7 @@ hdfs dfs -copyFromLocal -f ${sm2} ${smBox2}
 hdfs dfs -copyFromLocal -f ${sm3} ${smBox1Ongoing}
 hdfs dfs -copyFromLocal -f ${sm4} ${smBox2Ongoing}
 
-echo "[INFO] preparing HIVE for br.com.bvs.datalake.transaction.UserHiveDataTransaction"
+echo "[INFO] preparing Hive: br.com.bvs.datalake.transaction.UserHiveDataTransaction"
 TableTypesLocation=/br/com/bvs/datalake/transaction/UserHiveDataTransaction/TableTypes
 hdfs dfs -mkdir -p ${TableTypesLocation}
 hive -e "create database if not exists testdb;"
