@@ -3,12 +3,12 @@ package br.com.bvs.datalake.core
 import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.apache.hadoop.fs.{FileSystem, Path}
+import scala.collection.mutable
 import java.io.ByteArrayInputStream
 import java.util.{Calendar, Properties}
 import java.security.MessageDigest
 import java.math.BigInteger
 import java.time.Instant
-
 import br.com.bvs.datalake.core.Ernesto.WatchSmartContractsOn
 import br.com.bvs.datalake.helper.CorePropertiesHelper
 import br.com.bvs.datalake.io.HdfsIO
@@ -16,8 +16,6 @@ import br.com.bvs.datalake.io.HdfsIO._
 import br.com.bvs.datalake.model.{CoreMetadata, SmartContract}
 import br.com.bvs.datalake.transaction.UploadToHiveTransaction
 import br.com.bvs.datalake.transaction.UploadToHiveTransaction.{HiveDataFailed, HiveDataOk, Start}
-
-import scala.collection.mutable
 
 object SmartContractRanger {
   def props(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: ActorRef): Props =
@@ -64,16 +62,12 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
 
     case DataFromFile(path, data) =>
       val props = new Properties()
-      // TODO check is this working without toString?
-      //props.load(new ByteArrayInputStream(data.toString.getBytes()))
       props.load(new ByteArrayInputStream(data.getBytes()))
-
       val sm = buildSmartContract(props)
-
       // TODO validadeSmartContract(sm)
       // TODO if not valid move to failed and do not continue
 
-      // TODO check if ongoing/ongoing is a problem
+      /* move to ongoing if it's not already from it */
       if(!path.toString.contains(s"${meta.ongoingDirName}"))
         hdfsIO ! MoveToSubDir(hdfsClient, path, meta.ongoingDirName)
 
