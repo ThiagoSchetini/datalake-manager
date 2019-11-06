@@ -1,14 +1,14 @@
 package br.com.bvs.datalake.core
 
 import akka.actor.Status.Failure
-import scala.language.postfixOps
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
+import scala.language.postfixOps
+import org.apache.hadoop.fs.FileSystem
 import br.com.bvs.datalake.core.Ernesto.{SmartContractKey, SmartContractTick, WatchSmartContractsOn}
 import br.com.bvs.datalake.helper.CorePropertiesHelper
 import br.com.bvs.datalake.io.HdfsIO
 import br.com.bvs.datalake.io.HdfsIO.ListFilesFrom
 import br.com.bvs.datalake.model.CoreMetadata
-import org.apache.hadoop.fs.FileSystem
 
 /**
   * Ernesto the Scheduler
@@ -22,8 +22,8 @@ object Ernesto {
 }
 
 class Ernesto(hdfsClient: FileSystem) extends Actor with Timers with ActorLogging {
-  var meta: CoreMetadata = _
-  var hdfsIO: ActorRef = _
+  private var meta: CoreMetadata = _
+  private var hdfsIO: ActorRef = _
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     context.parent ! Failure(reason)

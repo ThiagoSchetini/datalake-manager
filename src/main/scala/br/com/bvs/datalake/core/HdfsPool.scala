@@ -1,11 +1,12 @@
-package br.com.bvs.datalake.io
+package br.com.bvs.datalake.core
 
 import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
 import scala.collection.mutable
+import br.com.bvs.datalake.core.HdfsPool._
 import br.com.bvs.datalake.helper.HadoopConfigurationHelper
-import HdfsPool._
+import br.com.bvs.datalake.io.HdfsIO
 
 object HdfsPool {
   def props: Props = Props(new HdfsPool)
@@ -17,7 +18,7 @@ object HdfsPool {
 
 class HdfsPool extends Actor with ActorLogging {
 
-  /* one unique client to application */
+  /* one unique client from this pool */
   private var hdfsClient: FileSystem = _
 
   /* one unique appender per file */

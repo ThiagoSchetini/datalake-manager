@@ -1,17 +1,11 @@
-package br.com.bvs.datalake.io
+package br.com.bvs.datalake.core
 
 import akka.actor.{Actor, ActorLogging, Props, Status}
-import java.sql.SQLException
-import java.sql.Connection
-import java.sql.ResultSet
-import java.sql.Statement
-import java.sql.DriverManager
-
-import br.com.bvs.datalake.helper.CorePropertiesHelper
-import br.com.bvs.datalake.io.HivePool.{GetHiveConnection, DisposeConnection}
-import br.com.bvs.datalake.model.CoreMetadata
-
 import scala.collection.mutable
+import java.sql.{Connection, DriverManager}
+import br.com.bvs.datalake.core.HivePool.{DisposeConnection, GetHiveConnection}
+import br.com.bvs.datalake.helper.CorePropertiesHelper
+import br.com.bvs.datalake.model.CoreMetadata
 
 object HivePool {
   val props: Props = Props(new HivePool)
@@ -25,14 +19,14 @@ class HivePool extends Actor with ActorLogging{
   private var connPool: mutable.Set[Connection] = _
   private var connBusy: mutable.Set[Connection] = _
 
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    context.parent ! Status.Failure(reason)
+  }
+
   override def preStart(): Unit = {
     meta = CorePropertiesHelper.getCoreMetadata
     connPool = new mutable.HashSet[Connection]()
     connBusy = new mutable.HashSet[Connection]()
-  }
-
-  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    sender ! Status.Failure(reason)
   }
 
   override def receive: Receive = {
@@ -60,7 +54,7 @@ class HivePool extends Actor with ActorLogging{
   }
 
   override def postStop(): Unit = {
-    log.info("closing open connections")
+    log.info("closing opened connections")
     connPool.foreach(_.close)
     connBusy.foreach(_.close)
   }

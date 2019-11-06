@@ -1,8 +1,6 @@
 package br.com.bvs.datalake.io
 
-import java.io.{BufferedInputStream, BufferedReader, ByteArrayInputStream, File, FileInputStream, InputStream, InputStreamReader}
-import java.util.stream.{Collector, Collectors}
-
+import java.io.{BufferedInputStream, BufferedReader, ByteArrayInputStream, File, FileInputStream, InputStreamReader}
 import akka.actor.{Actor, ActorLogging, Props, Status}
 import org.apache.hadoop.fs._
 import HdfsIO._
@@ -119,7 +117,8 @@ class HdfsIO extends Actor with ActorLogging {
       val fileName = sourcePath.getName
       val root = sourcePath.getParent
       val targetPath = new Path(s"$root/$sub/$fileName")
-      hdfsClient.rename(sourcePath, targetPath)
-      log.info(s"$fileName moved to $root/$sub")
+      val result = hdfsClient.rename(sourcePath, targetPath)
+      if (result)
+        log.info(s"$fileName moved to $root/$sub")
   }
 }

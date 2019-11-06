@@ -1,5 +1,7 @@
 # Datalake Manager
-under construction...
+First, notice the "SM" or "sm" on the entire system. It means: Smart Contract
+
+... to continue with mnore instructions
 
 ### requirements
 Up and running non kerberos environment:
