@@ -107,7 +107,9 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
       props.getProperty("distributionPaths").split(",").toSet,
       props.getProperty("versionPattern"),
       props.getProperty("delimiter"),
-      props.getProperty("header")
+      props.getProperty("header"),
+      props.getProperty("database"),
+      props.getProperty("table")
     )
   }
 

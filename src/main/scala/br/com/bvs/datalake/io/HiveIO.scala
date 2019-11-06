@@ -1,20 +1,32 @@
 package br.com.bvs.datalake.io
 
+import java.sql.Connection
 import akka.actor.{Actor, ActorLogging, Props, Status}
-import br.com.bvs.datalake.core.HivePool
+import br.com.bvs.datalake.io.HiveIO.{CheckTable, DatabaseNotExist, TableChecked}
 
 object HiveIO {
-  def props(hivePool: HivePool): Props = Props(new HiveIO(hivePool))
+  def props: Props = Props(new HiveIO)
 
-
+  case class CheckTable(conn: Connection, database: String, table: String)
+  case object DatabaseNotExist
+  case object TableChecked
 }
 
 
-class HiveIO(hivePool: HivePool) extends Actor with ActorLogging {
+class HiveIO extends Actor with ActorLogging {
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     sender ! Status.Failure(reason)
   }
 
-  override def receive: Receive = ???
+  override def receive: Receive = {
+    case CheckTable(conn, database, table) =>
+
+      // TODO check hive database.
+      sender ! DatabaseNotExist
+
+      // TODO if table does not exists create it and responsd:
+      sender ! TableChecked
+
+  }
 }

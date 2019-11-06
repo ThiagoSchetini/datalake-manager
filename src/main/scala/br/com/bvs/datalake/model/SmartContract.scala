@@ -11,4 +11,6 @@ case class SmartContract(sourceName: String,
                          distributionPaths: Set[String],
                          versionPattern: String,
                          delimiter: String,
-                         header: String)
+                         header: String,
+                         database: String,
+                         table: String)
