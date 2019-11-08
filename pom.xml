@@ -120,7 +120,7 @@
                 </configuration>
             </plugin>
 
-            <!-- execute shell on some phase
+            <!-- execute shell on some phase -->
             <plugin>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.6.0</version>
@@ -134,12 +134,12 @@
                         </goals>
                         <configuration>
                             <executable>bash</executable>
-                            <commandlineArgs>integration-test.sh</commandlineArgs>
+                            <commandlineArgs>src/test/data/prepare-all.sh</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-            -->
+
 
             <!-- surefire skipping tests (using scalatest) -->
             <plugin>

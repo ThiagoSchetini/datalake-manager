@@ -4,27 +4,25 @@ import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
 import akka.util.Timeout
 import akka.pattern.ask
-
 import scala.concurrent.Await
 import org.apache.hadoop.fs.Path
 import java.sql.Connection
-
 import br.com.bvs.datalake.core.HivePool.GetHiveConnection
 import br.com.bvs.datalake.io.HiveIO
 import br.com.bvs.datalake.io.HiveIO.{CheckTable, DatabaseAndTableChecked}
 import br.com.bvs.datalake.model.SmartContract
-import br.com.bvs.datalake.transaction.UploadToHiveTransaction.Start
+import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
 
-object UploadToHiveTransaction {
+object FileToHiveTransaction {
   def props(path: Path, sm: SmartContract, hivePool: ActorRef, timeout: Timeout):Props =
-    Props(new UploadToHiveTransaction(path, sm, hivePool, timeout))
+    Props(new FileToHiveTransaction(path, sm, hivePool, timeout))
 
   case object Start
   case class HiveDataOk(path: Path)
   case class HiveDataFailed(path: Path)
 }
 
-class UploadToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, timeout: Timeout) extends Actor with ActorLogging {
+class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, timeout: Timeout) extends Actor with ActorLogging {
   implicit val clientTimeout: Timeout = timeout
   private var hiveConn: Connection = _
   private var hiveIO: ActorRef = _
@@ -40,20 +38,16 @@ class UploadToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef,
   }
 
   override def receive: Receive = {
-    case Start => {
+    case Start =>
       log.info(s"start: ${path.getName}")
-      hiveIO ! CheckTable(hiveConn, sm.database, sm.table)
-    }
+      hiveIO ! CheckTable(hiveConn, sm.destinationDatabase, sm.destinationTable)
 
     case DatabaseAndTableChecked =>
-      log.info(s"checked: ${sm.database}.${sm.table}")
+      log.info(s"checked: ${sm.destinationDatabase}.${sm.destinationTable}")
 
-
-
-    case Failure(e) => {
+    case Failure(e) =>
       println(e.getMessage)
       log.info(s"Transaction failed for: ${path.getName}")
-    }
 
   }
 }

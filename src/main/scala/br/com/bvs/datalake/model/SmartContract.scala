@@ -1,17 +1,15 @@
 package br.com.bvs.datalake.model
 
-case class SmartContract(sourceName: String,
-                         sourceServer: String,
+case class SmartContract(sourceServer: String,
                          sourcePath: String,
-                         sourceFields: List[String],
+                         sourceHeader: Boolean,
+                         sourceDelimiter: String,
+                         sourceBooleanTrue: String,
+                         sourceBooleanFalse: String,
+                         sourceTimeFormat: String,
                          destinationFields: List[String],
                          destinationTypes: List[String],
-                         fileReleasePath: String,
-                         smartReleasePath: String,
-                         distributionPaths: Set[String],
-                         versionPattern: String,
-                         delimiter: String,
-                         header: Boolean,
-                         database: String,
-                         table: String,
-                         overwrite: Boolean)
+                         destinationPath: String,
+                         destinationDatabase: String,
+                         destinationTable: String,
+                         destinationOverwrite:Boolean)

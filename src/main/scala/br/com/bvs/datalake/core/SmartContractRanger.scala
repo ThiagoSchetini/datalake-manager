@@ -14,8 +14,8 @@ import br.com.bvs.datalake.helper.CorePropertiesHelper
 import br.com.bvs.datalake.io.HdfsIO
 import br.com.bvs.datalake.io.HdfsIO._
 import br.com.bvs.datalake.model.{CoreMetadata, SmartContract}
-import br.com.bvs.datalake.transaction.UploadToHiveTransaction
-import br.com.bvs.datalake.transaction.UploadToHiveTransaction.{HiveDataFailed, HiveDataOk, Start}
+import br.com.bvs.datalake.transaction.FileToHiveTransaction
+import br.com.bvs.datalake.transaction.FileToHiveTransaction.{HiveDataFailed, HiveDataOk, Start}
 
 object SmartContractRanger {
   def props(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: ActorRef): Props =
@@ -73,7 +73,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
 
       /* creates unique hash and a new transaction for a Smart Contract here, them start it */
       val hash = hashSM(data.getBytes())
-      val transaction = context.actorOf(UploadToHiveTransaction.props(path, sm, hivePool, meta.clientTimeout), s"transaction-$hash")
+      val transaction = context.actorOf(FileToHiveTransaction.props(path, sm, hivePool, meta.clientTimeout), s"transaction-$hash")
       ongoingSm += path -> (transaction, serializeSmartContract(path.getName, sm, hash))
       transaction ! Start
 
@@ -97,18 +97,16 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
 
   private def buildSmartContract(props: Properties): SmartContract = {
     SmartContract(
-      props.getProperty("source.name"),
       props.getProperty("source.server"),
       props.getProperty("source.path"),
-      props.getProperty("sourceFields").split(",").toList,
+      props.getProperty("source.header").toBoolean,
+      props.getProperty("source.delimiter"),
+      props.getProperty("source.boolean.true"),
+      props.getProperty("source.boolean.false"),
+      props.getProperty("source.time.format"),
       props.getProperty("destination.fields").split(",").toList,
       props.getProperty("destination.types").split(",").toList,
-      props.getProperty("fileReleasePath"),
-      props.getProperty("smartReleasePath"),
-      props.getProperty("distributionPaths").split(",").toSet,
-      props.getProperty("versionPattern"),
-      props.getProperty("destination.delimiter"),
-      props.getProperty("source.header").toBoolean,
+      props.getProperty("destination.path"),
       props.getProperty("destination.database"),
       props.getProperty("destination.table"),
       props.getProperty("destination.overwrite").toBoolean
@@ -119,25 +117,21 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
     ???
   }
 
-  private def serializeSmartContract(fileName: String, sm: SmartContract, hash: String): String = {
+  private def serializeSmartContract(smFileName: String, sm: SmartContract, hash: String): String = {
     val newline = "\n"
     val smBuilder = new StringBuilder()
 
     smBuilder.append(
       s"""$hash
-         |${sm.sourceName}
+         |$smFileName
          |${sm.sourceServer}
          |${sm.sourcePath}
-         |${sm.sourceFields}
          |${sm.destinationFields}
          |${sm.destinationTypes}
-         |${sm.smartReleasePath}
-         |${sm.fileReleasePath}
-         |${sm.distributionPaths}
-         |${sm.versionPattern}
-         |${sm.delimiter}
-         |${sm.header}
-         |$fileName
+         |${sm.destinationPath}
+         |${sm.destinationDatabase}
+         |${sm.destinationTable}
+         |${sm.destinationOverwrite}
          |${Calendar.getInstance.getTime}"""
         .stripMargin.replaceAll(newline, meta.smDelimiter.toString)).append(newline)
 
