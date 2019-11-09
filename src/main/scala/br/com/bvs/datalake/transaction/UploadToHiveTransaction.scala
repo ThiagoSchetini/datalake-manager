@@ -11,7 +11,7 @@ import java.sql.Connection
 
 import br.com.bvs.datalake.core.HivePool.GetHiveConnection
 import br.com.bvs.datalake.io.HiveIO
-import br.com.bvs.datalake.io.HiveIO.{CheckTable, TableChecked}
+import br.com.bvs.datalake.io.HiveIO.{CheckTable, DatabaseAndTableChecked}
 import br.com.bvs.datalake.model.SmartContract
 import br.com.bvs.datalake.transaction.UploadToHiveTransaction.Start
 
@@ -45,7 +45,7 @@ class UploadToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef,
       hiveIO ! CheckTable(hiveConn, sm.database, sm.table)
     }
 
-    case TableChecked =>
+    case DatabaseAndTableChecked =>
       log.info(s"checked: ${sm.database}.${sm.table}")
 
 

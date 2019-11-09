@@ -65,7 +65,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
       props.load(new ByteArrayInputStream(data.getBytes()))
       val sm = buildSmartContract(props)
       // TODO validadeSmartContract(sm)
-      // TODO if not valid move to failed and do not continue
+      // TODO if not valid move to failed and do NOT continue ... we could write the reason on hdfs csv ... code below:
 
       /* move to ongoing if it's not already from it */
       if(!path.toString.contains(s"${meta.ongoingDirName}"))
@@ -97,21 +97,21 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
 
   private def buildSmartContract(props: Properties): SmartContract = {
     SmartContract(
-      props.getProperty("sourceName"),
-      props.getProperty("sourceServer"),
-      props.getProperty("sourcePath"),
+      props.getProperty("source.name"),
+      props.getProperty("source.server"),
+      props.getProperty("source.path"),
       props.getProperty("sourceFields").split(",").toList,
-      props.getProperty("destinationFields").split(",").toList,
-      props.getProperty("destinationTypes").split(",").toList,
+      props.getProperty("destination.fields").split(",").toList,
+      props.getProperty("destination.types").split(",").toList,
       props.getProperty("fileReleasePath"),
       props.getProperty("smartReleasePath"),
       props.getProperty("distributionPaths").split(",").toSet,
       props.getProperty("versionPattern"),
-      props.getProperty("delimiter"),
-      props.getProperty("header").toBoolean,
-      props.getProperty("database"),
-      props.getProperty("table"),
-      props.getProperty("overwrite").toBoolean
+      props.getProperty("destination.delimiter"),
+      props.getProperty("source.header").toBoolean,
+      props.getProperty("destination.database"),
+      props.getProperty("destination.table"),
+      props.getProperty("destination.overwrite").toBoolean
     )
   }
 

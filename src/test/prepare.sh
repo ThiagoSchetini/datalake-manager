@@ -21,6 +21,7 @@ hdfs dfs -copyFromLocal -f ${sm3} ${smBox1Ongoing}
 hdfs dfs -copyFromLocal -f ${sm4} ${smBox2Ongoing}
 
 echo "[INFO] preparing Hive: br.com.bvs.datalake.transaction.UserHiveDataTransaction"
-TableTypesLocation=/br/com/bvs/datalake/transaction/UserHiveDataTransaction/TableTypes
-hdfs dfs -mkdir -p ${TableTypesLocation}
-hive -e "create database if not exists testdb;"
+TableProductsLocation=/br/com/bvs/datalake/transaction/UserHiveDataTransaction/Products
+hive -e "drop database if exists testdb;"
+hdfs dfs -rm -R -skipTrash ${TableProductsLocation}
+hdfs dfs -mkdir -p ${TableProductsLocation}
