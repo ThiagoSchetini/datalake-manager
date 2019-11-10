@@ -99,7 +99,7 @@
 
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>
-        <testSourceDirectory>src/test/scala</testSourceDirectory>
+        <!--<testSourceDirectory>src/test/scala</testSourceDirectory>-->
 
         <plugins>
             <!-- http://davidb.github.com/scala-maven-plugin -->
@@ -134,12 +134,11 @@
                         </goals>
                         <configuration>
                             <executable>bash</executable>
-                            <commandlineArgs>src/test/data/prepare-all.sh</commandlineArgs>
+                            <commandlineArgs>prepare-test-data.sh</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
 
             <!-- surefire skipping tests (using scalatest) -->
             <plugin>

@@ -6,5 +6,5 @@ echo "[INFO] Database: testdb"
 hive -e "drop database if exists testdb;"
 hive -e "create database testdb;"
 
-sh SmartContractRanger/prepare.sh
-sh FileToHiveTransaction/prepare.sh
+sh src/test/data/SmartContractRanger/prepare.sh
+sh src/test/data/FileToHiveTransaction/prepare.sh

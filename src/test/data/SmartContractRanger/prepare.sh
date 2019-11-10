@@ -8,8 +8,8 @@ sm1=${testPath}/sm1.properties
 sm2=${testPath}/sm2.properties
 watch1=${hdfsPath}/watch1
 watch2=${hdfsPath}/watch2
-hdfs dfs -rm -R -skipTrash ${watch1}
-hdfs dfs -rm -R -skipTrash ${watch2}
+hdfs dfs -rm -R -skipTrash ${watch1} 2>/dev/null
+hdfs dfs -rm -R -skipTrash ${watch2} 2>/dev/null
 hdfs dfs -mkdir -p ${watch1}
 hdfs dfs -mkdir -p ${watch2}
 hdfs dfs -copyFromLocal ${sm1} ${watch1}
@@ -20,8 +20,8 @@ sm3=${testPath}/sm3.properties
 sm4=${testPath}/sm4.properties
 ongoing1=${hdfsPath}/watch1/ongoing
 ongoing2=${hdfsPath}/watch2/ongoing
-hdfs dfs -rm -R -skipTrash ${ongoing1}
-hdfs dfs -rm -R -skipTrash ${ongoing2}
+hdfs dfs -rm -R -skipTrash ${ongoing1} 2>/dev/null
+hdfs dfs -rm -R -skipTrash ${ongoing2} 2>/dev/null
 hdfs dfs -mkdir -p ${ongoing1}
 hdfs dfs -mkdir -p ${ongoing2}
 hdfs dfs -copyFromLocal ${sm3} ${ongoing1}

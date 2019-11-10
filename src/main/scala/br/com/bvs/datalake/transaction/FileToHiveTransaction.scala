@@ -40,7 +40,8 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
   override def receive: Receive = {
     case Start =>
       log.info(s"start: ${path.getName}")
-      hiveIO ! CheckTable(hiveConn, sm.destinationDatabase, sm.destinationTable)
+      val fields = (sm.destinationFields, sm.destinationTypes).zipped.map((_,_))
+      hiveIO ! CheckTable(hiveConn, sm.destinationDatabase, sm.destinationTable, sm.destinationPath, fields)
 
     case DatabaseAndTableChecked =>
       log.info(s"checked: ${sm.destinationDatabase}.${sm.destinationTable}")
@@ -48,6 +49,5 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
     case Failure(e) =>
       println(e.getMessage)
       log.info(s"Transaction failed for: ${path.getName}")
-
   }
 }
