@@ -5,7 +5,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 import scala.language.postfixOps
 import org.apache.hadoop.fs.FileSystem
 import br.com.bvs.datalake.core.Ernesto.{SmartContractKey, SmartContractTick, WatchSmartContractsOn}
-import br.com.bvs.datalake.helper.CorePropertiesHelper
+import br.com.bvs.datalake.helper.PropertiesHelper
 import br.com.bvs.datalake.io.HdfsIO
 import br.com.bvs.datalake.io.HdfsIO.ListFilesFrom
 import br.com.bvs.datalake.model.CoreMetadata
@@ -30,7 +30,7 @@ class Ernesto(hdfsClient: FileSystem) extends Actor with Timers with ActorLoggin
   }
 
   override def preStart(): Unit = {
-    meta = CorePropertiesHelper.getCoreMetadata
+    meta = PropertiesHelper.getCoreMetadata
     hdfsIO = context.actorOf(HdfsIO.props)
   }
 

@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorLogging, Props, Status}
 import scala.collection.mutable
 import java.sql.{Connection, DriverManager}
 import br.com.bvs.datalake.core.HivePool.{DisposeConnection, GetHiveConnection}
-import br.com.bvs.datalake.helper.CorePropertiesHelper
+import br.com.bvs.datalake.helper.PropertiesHelper
 import br.com.bvs.datalake.model.CoreMetadata
 
 object HivePool {
@@ -24,7 +24,7 @@ class HivePool extends Actor with ActorLogging{
   }
 
   override def preStart(): Unit = {
-    meta = CorePropertiesHelper.getCoreMetadata
+    meta = PropertiesHelper.getCoreMetadata
     connPool = new mutable.HashSet[Connection]()
     connBusy = new mutable.HashSet[Connection]()
   }

@@ -7,7 +7,7 @@ import akka.pattern.ask
 import scala.concurrent.Await
 import org.apache.hadoop.fs.FileSystem
 import br.com.bvs.datalake.core.Reaper.Reap
-import br.com.bvs.datalake.helper.CorePropertiesHelper
+import br.com.bvs.datalake.helper.PropertiesHelper
 import br.com.bvs.datalake.core.HdfsPool.GetHDFSClient
 
 object Supervisor {
@@ -22,7 +22,7 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
   private var ernesto: ActorRef = _
 
   override def preStart(): Unit = {
-    implicit val clientTimeout: Timeout = CorePropertiesHelper.getCoreMetadata.clientTimeout
+    implicit val clientTimeout: Timeout = PropertiesHelper.getCoreMetadata.clientTimeout
     hdfsPool = context.actorOf(HdfsPool.props, "hdfs-pool")
     hivePool = context.actorOf(HivePool.props, "hive-pool")
 

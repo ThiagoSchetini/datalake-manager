@@ -10,7 +10,7 @@ import java.security.MessageDigest
 import java.math.BigInteger
 import java.time.Instant
 import br.com.bvs.datalake.core.Ernesto.WatchSmartContractsOn
-import br.com.bvs.datalake.helper.CorePropertiesHelper
+import br.com.bvs.datalake.helper.PropertiesHelper
 import br.com.bvs.datalake.io.HdfsIO
 import br.com.bvs.datalake.io.HdfsIO._
 import br.com.bvs.datalake.model.{CoreMetadata, SmartContract}
@@ -32,7 +32,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
 
   override def preStart(): Unit = {
     ongoingSm = new mutable.HashMap[Path, (ActorRef, String)]()
-    meta = CorePropertiesHelper.getCoreMetadata
+    meta = PropertiesHelper.getCoreMetadata
     hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
 
     meta.smWatchDirs.foreach(dir => {
