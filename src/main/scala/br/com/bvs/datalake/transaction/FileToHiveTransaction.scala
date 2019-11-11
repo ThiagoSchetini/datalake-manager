@@ -46,6 +46,7 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
     case DatabaseAndTableChecked =>
       log.info(s"checked: ${sm.destinationDatabase}.${sm.destinationTable}")
 
+
     case Failure(e) =>
       log.info(s"Transaction failed for ${path.getName}: ${e.getMessage}")
   }
