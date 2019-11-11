@@ -32,3 +32,5 @@ testSource2=${testPath}/file2.csv
 hdfs dfs -copyFromLocal ${testSource2} ${sourcePath2}
 testSource3=${testPath}/file3.csv
 hdfs dfs -copyFromLocal ${testSource3} ${sourcePath2}
+
+hive -e "drop table if exists types;"

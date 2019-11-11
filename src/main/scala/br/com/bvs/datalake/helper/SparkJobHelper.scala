@@ -8,14 +8,13 @@ case class SparkJobProduction(jar: String,
                               queue: String,
                               driverMemory: Int,
                               driverCores: Int,
-                              numExecutors: Int,
+                              executors: Int,
                               executorMemory: Int,
                               executorCores: Int,
                               shuffleParallelConn: Int,
-                              yarnMaxRetries: Int,
-                              shuffleMaxRetries: Int) extends SparkJob
+                              retries: Int) extends SparkJob
 
-class SparkJobMaker {
+object SparkJobHelper {
   private val multiplyBytes = 1024
   private val overheadFactor = 4
   private val sep = " "
@@ -50,24 +49,23 @@ class SparkJobMaker {
   private val yarnMaxRetries = "--conf spark.yarn.maxAppAttempts="
   private val shuffleMaxRetries = "--conf spark.shuffle.io.maxRetries="
 
-  def make(t: SparkJob): Any = t match {
+  def serializeSubmit(t: SparkJob): StringBuilder = t match {
     case SparkJobDeveloper(jar) =>
       val builder = new StringBuilder
       builder.append(s"$basic$sep")
       builder.append(s"$mode client$sep")
       builder.append(jar)
-      builder.mkString
 
-    case SparkJobProduction(jar, q, dMemory, dCores, executors, eMemory, eCores, shuffleConn, retries, shuffleRetries) =>
-      val overheadMemory = dMemory.*(multiplyBytes)./(overheadFactor)
+    case SparkJobProduction(jar, q, mem, cores, executors, eMem, eCores, connections, retries) =>
+      val overheadMemory = mem.*(multiplyBytes)./(overheadFactor)
       val builder = new StringBuilder
       builder.append(s"$basic$sep")
       builder.append(s"$mode cluster$sep")
       builder.append(s"$queue $q$sep")
-      builder.append(s"$driverMemory ${dMemory}G$sep")
-      builder.append(s"$driverCores $dCores$sep")
+      builder.append(s"$driverMemory ${mem}G$sep")
+      builder.append(s"$driverCores $cores$sep")
       builder.append(s"$numExecutors $executors$sep")
-      builder.append(s"$executorMemory ${eMemory}G$sep")
+      builder.append(s"$executorMemory ${eMem}G$sep")
       builder.append(s"$executorCores $eCores$sep")
       builder.append(s"$offHeapEnable$sep")
       builder.append(s"$offHeapSize$overheadMemory$sep")
@@ -76,11 +74,10 @@ class SparkJobMaker {
       builder.append(s"$noDriverLimit$sep")
       builder.append(s"$jvmElasticYoungGen$sep")
       builder.append(s"$forceKryoSerializer$sep")
-      builder.append(s"$shuffleParallelConn$shuffleConn$sep")
+      builder.append(s"$shuffleParallelConn$connections$sep")
       builder.append(s"$yarnMaxRetries$retries$sep")
-      builder.append(s"$shuffleMaxRetries$shuffleRetries$sep")
+      builder.append(s"$shuffleMaxRetries$retries$sep")
       builder.append(jar)
-      builder.mkString
   }
 
 }

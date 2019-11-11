@@ -8,6 +8,7 @@ import scala.concurrent.Await
 import org.apache.hadoop.fs.Path
 import java.sql.Connection
 import br.com.bvs.datalake.core.HivePool.GetHiveConnection
+import br.com.bvs.datalake.helper._
 import br.com.bvs.datalake.io.HiveIO
 import br.com.bvs.datalake.io.HiveIO.{CheckTable, DatabaseAndTableChecked}
 import br.com.bvs.datalake.model.SmartContract
@@ -26,6 +27,7 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
   implicit val clientTimeout: Timeout = timeout
   private var hiveConn: Connection = _
   private var hiveIO: ActorRef = _
+  private var submit: StringBuilder = _
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     sender ! Status.Failure(reason)
@@ -45,7 +47,28 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
 
     case DatabaseAndTableChecked =>
       log.info(s"checked: ${sm.destinationDatabase}.${sm.destinationTable}")
+      val meta = PropertiesHelper.getSparkMetadata
 
+      if (meta.production) {
+        /* TODO dynamic tuning params by job */
+        val mem = 24
+        val cores = 12
+        val executors = 3
+        val eMem = 16
+        val eCores = 12
+        val connections = 3
+        val retries = 19
+
+        val sparkJob = SparkJobProduction(meta.jar, meta.queue, mem, cores, executors, eMem, eCores, connections, retries)
+        submit = SparkJobHelper.serializeSubmit(sparkJob)
+
+      } else
+        submit = SparkJobHelper.serializeSubmit(SparkJobDeveloper(meta.jar))
+
+      // TODO add to submit the spark method and paths
+      println(submit.mkString)
+
+      // TODO monitor the shell submit
 
     case Failure(e) =>
       log.info(s"Transaction failed for ${path.getName}: ${e.getMessage}")
