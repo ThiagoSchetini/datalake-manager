@@ -1,9 +1,26 @@
 package br.com.bvs.datalake.model
 
-class SparkSubmitBuilder {
-  private val basic = "spark-submit --master yarn --deploy-mode cluster"
+sealed trait SparkJob
+
+case class SparkJobDeveloper(s: String) extends SparkJob
+
+case class SparkJobProduction(queue: String,
+                              driverMemory: Int,
+                              driverCores: Int,
+                              numExecutors: Int,
+                              executorMemory: Int,
+                              executorCores: Int,
+                              shuffleParallelConn: Int,
+                              yarnMaxRetries: Int,
+                              shuffleMaxRetries: Int) extends SparkJob
+
+class SparkJobMaker {
+  private val multiplyBase = 1024
+  private val overheadFactor = 4
+
+  private val basic = "spark-submit --master yarn"
+  private val mode = "--deploy-mode "
   private val queue = "--queue "
-  private var queueValue: String = _
 
   /* driver */
   private val driverMemory = "--driver-memory "
@@ -14,7 +31,7 @@ class SparkSubmitBuilder {
   private val executorMemory = "--executor-memory "
   private val executorCores = "--executor-cores "
 
-  /* over memory */
+  /* over memory (auto) */
   private val offHeapEnable = "--conf spark.memory.offHeap.enabled=true"
   private val offHeapSize = "--conf spark.memory.offHeap.size="
   private val driverMemoryOverhead = "--conf spark.yarn.driver.memoryOverhead="
@@ -24,11 +41,21 @@ class SparkSubmitBuilder {
   private val noDriverLimit = "--conf spark.driver.maxResultSize=0"
   private val jvmElasticYoungGen = "--conf spark.executor.extraJavaOptions=\"-XX:+UseG1GC -XX:NewRatio=1 -XX:SurvivorRatio=128 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=5\""
   private val forceKryoSerializer = "--conf spark.serializer=org.apache.spark.serializer.KryoSerializer"
-  private val shuffleConnections = "--conf spark.shuffle.io.numConnectionsPerPeer="
+  private val shuffleParallelConn = "--conf spark.shuffle.io.numConnectionsPerPeer="
 
   /* ethernet stability tolerance */
   private val yarnMaxRetries = "--conf spark.yarn.maxAppAttempts="
   private val shuffleMaxRetries = "--conf spark.shuffle.io.maxRetries="
+
+  def make(t: SparkJob): Any = t match {
+    case SparkJobDeveloper(s) =>
+      println("developer detected")
+      "developer"
+
+    case SparkJobProduction(q, memory, cores, executors, memoryex, coresex, shuffle, retries, shuffleRetries) =>
+      println("fdsa")
+      "production"
+  }
 }
 
 /*
@@ -36,19 +63,19 @@ spark-submit \
 --master yarn \
 --deploy-mode cluster \
 --queue root.svc_datalake \
---driver-memory 32G \
---driver-cores 16 \
---conf spark.yarn.driver.memoryOverhead=16384 \
---num-executors 12 \
---executor-memory 24G \
+--driver-memory 24G \
+--driver-cores 12 \
+--conf spark.yarn.driver.memoryOverhead=8192 \
+--num-executors 3 \
+--executor-memory 16G \
 --executor-cores 12 \
---conf spark.yarn.executor.memoryOverhead=16384 \
+--conf spark.yarn.executor.memoryOverhead=8192 \
 --conf spark.driver.maxResultSize=0 \
---conf spark.shuffle.io.numConnectionsPerPeer=10 \
+--conf spark.shuffle.io.numConnectionsPerPeer=3 \
 --conf spark.memory.offHeap.enabled=true \
---conf spark.memory.offHeap.size=16384 \
+--conf spark.memory.offHeap.size=8192 \
 --conf spark.executor.extraJavaOptions="-XX:+UseG1GC -XX:NewRatio=1 -XX:SurvivorRatio=128 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=5" \
 --conf spark.serializer=org.apache.spark.serializer.KryoSerializer \
---conf spark.yarn.maxAppAttempts=5 \
---conf spark.shuffle.io.maxRetries=5 \
+--conf spark.yarn.maxAppAttempts=15 \
+--conf spark.shuffle.io.maxRetries=15 \
  */
