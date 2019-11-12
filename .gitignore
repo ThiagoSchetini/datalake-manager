@@ -1,6 +1,9 @@
 # BVS
 deploy.sh
 
+# Spark
+spark-warehouse/
+
 # general
 *.class
 *.jar
