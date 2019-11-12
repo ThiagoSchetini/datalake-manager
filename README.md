@@ -53,8 +53,13 @@ Open "Run/Debug Configurations":
 `Environment variables: DATALAKE_MANAGER_PROPS=src/main/resources`
 
 ### references
-Cassandra https://medium.com/rahasak/scala-cake-pattern-e0cd894dae4e
+Cassandra: `https://medium.com/rahasak/scala-cake-pattern-e0cd894dae4e`
 
-Docker Compose: https://carledwinti.wordpress.com/2019/11/02/instalar-o-docker-no-ubuntu-19-10/
+Docker Compose: `https://carledwinti.wordpress.com/2019/11/02/instalar-o-docker-no-ubuntu-19-10/`
 
-HiveServer2: https://cwiki.apache.org/confluence/display/Hive/HiveServer2+Clients#HiveServer2Clients-JDBC
+HiveServer2: `https://cwiki.apache.org/confluence/display/Hive/HiveServer2+Clients#HiveServer2Clients-JDBC`
+
+OS Process with Scala: 
+
+    https://www.scala-lang.org/api/2.12.4/scala/sys/process/index.html
+    https://www.scala-lang.org/api/2.12.4/scala/sys/process/ProcessBuilder.html

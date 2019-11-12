@@ -1,20 +1,20 @@
 package br.com.bvs.datalake.helper
 
-sealed trait SparkJob
+sealed trait Submit
 
-case class SparkJobDeveloper(jar: String) extends SparkJob
+case class Developer(jar: String) extends Submit
 
-case class SparkJobProduction(jar: String,
-                              queue: String,
-                              driverMemory: Int,
-                              driverCores: Int,
-                              executors: Int,
-                              executorMemory: Int,
-                              executorCores: Int,
-                              shuffleParallelConn: Int,
-                              retries: Int) extends SparkJob
+case class Production(jar: String,
+                      queue: String,
+                      driverMemory: Int,
+                      driverCores: Int,
+                      executors: Int,
+                      executorMemory: Int,
+                      executorCores: Int,
+                      shuffleParallelConn: Int,
+                      retries: Int) extends Submit
 
-object SparkJobHelper {
+object SparkHelper {
   private val multiplyBytes = 1024
   private val overheadFactor = 4
   private val sep = " "
@@ -49,14 +49,14 @@ object SparkJobHelper {
   private val yarnMaxRetries = "--conf spark.yarn.maxAppAttempts="
   private val shuffleMaxRetries = "--conf spark.shuffle.io.maxRetries="
 
-  def serializeSubmit(t: SparkJob): StringBuilder = t match {
-    case SparkJobDeveloper(jar) =>
+  def serializeSubmit(t: Submit): StringBuilder = t match {
+    case Developer(jar) =>
       val builder = new StringBuilder
       builder.append(s"$basic$sep")
       builder.append(s"$mode client$sep")
       builder.append(jar)
 
-    case SparkJobProduction(jar, q, mem, cores, executors, eMem, eCores, connections, retries) =>
+    case Production(jar, q, mem, cores, executors, eMem, eCores, connections, retries) =>
       val overheadMemory = mem.*(multiplyBytes)./(overheadFactor)
       val builder = new StringBuilder
       builder.append(s"$basic$sep")

@@ -28,6 +28,7 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
   private var hiveConn: Connection = _
   private var hiveIO: ActorRef = _
   private var submit: StringBuilder = _
+  private val sparkFlow = "CSVToParquet"
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     sender ! Status.Failure(reason)
@@ -59,16 +60,17 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
         val connections = 3
         val retries = 19
 
-        val sparkJob = SparkJobProduction(meta.jar, meta.queue, mem, cores, executors, eMem, eCores, connections, retries)
-        submit = SparkJobHelper.serializeSubmit(sparkJob)
+        val prodSubmit = Production(meta.jar, meta.queue, mem, cores, executors, eMem, eCores, connections, retries)
+        submit = SparkHelper.serializeSubmit(prodSubmit)
 
       } else
-        submit = SparkJobHelper.serializeSubmit(SparkJobDeveloper(meta.jar))
+        submit = SparkHelper.serializeSubmit(Developer(meta.jar))
 
       // TODO add to submit the spark method and paths
       println(submit.mkString)
 
       // TODO monitor the shell submit
+
 
     case Failure(e) =>
       log.info(s"Transaction failed for ${path.getName}: ${e.getMessage}")
