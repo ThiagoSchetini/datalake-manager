@@ -1,7 +1,7 @@
 # Datalake Manager
-First, notice the "SM" or "sm" on the entire system. It means: Smart Contract
+The "SM" or "sm" symbol means: Smart Contract
 
-... to continue with mnore instructions
+... to continue with more instructions
 
 ### requirements
 Up and running non kerberos environment:
@@ -21,7 +21,7 @@ Change to a valid hadoop configuration directory:
 
 `hadoop.conf.dir=/your/hadoop/env/config`
 
-Change with your OS username:
+Change your OS username:
 
 `hiveserver2.url=jdbc:hive2://localhost:10000/;user=username`
 

@@ -5,13 +5,14 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
 import akka.util.Timeout
 import akka.pattern.ask
 import scala.concurrent.Await
+import scala.sys.process._
 import org.apache.hadoop.fs.Path
 import java.sql.Connection
 import br.com.bvs.datalake.core.HivePool.GetHiveConnection
 import br.com.bvs.datalake.helper._
 import br.com.bvs.datalake.io.HiveIO
 import br.com.bvs.datalake.io.HiveIO.{CheckTable, DatabaseAndTableChecked}
-import br.com.bvs.datalake.model.SmartContract
+import br.com.bvs.datalake.model.{Developer, Production, SmartContract}
 import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
 
 object FileToHiveTransaction {
@@ -27,7 +28,7 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
   implicit val clientTimeout: Timeout = timeout
   private var hiveConn: Connection = _
   private var hiveIO: ActorRef = _
-  private var submit: StringBuilder = _
+  private var cmd: Seq[String] = _
   private val sparkFlow = "CSVToParquet"
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
@@ -51,7 +52,7 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
       val meta = PropertiesHelper.getSparkMetadata
 
       if (meta.production) {
-        /* TODO dynamic tuning params by job */
+        /* TODO create this params by job on demand */
         val mem = 24
         val cores = 12
         val executors = 3
@@ -60,19 +61,29 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
         val connections = 3
         val retries = 19
 
-        val prodSubmit = Production(meta.jar, meta.queue, mem, cores, executors, eMem, eCores, connections, retries)
-        submit = SparkHelper.serializeSubmit(prodSubmit)
+        cmd = SparkHelper.createSubmit(
+          Production(meta.submit, meta.mode, meta.jar, meta.queue, mem, cores, executors, eMem, eCores, connections, retries))
 
       } else
-        submit = SparkHelper.serializeSubmit(Developer(meta.jar))
+        cmd = SparkHelper.createSubmit(Developer(meta.submit, meta.mode, meta.jar))
 
       // TODO add to submit the spark method and paths
-      println(submit.mkString)
-
-      // TODO monitor the shell submit
-
+      val result = sparkSubmit(meta.search, cmd)
+      println(result._1)
+      println(result._2.mkString)
 
     case Failure(e) =>
       log.info(s"Transaction failed for ${path.getName}: ${e.getMessage}")
+  }
+
+  private def sparkSubmit(search: String, cmd: Seq[String]): (Int, StringBuilder) = {
+    val builder = new StringBuilder()
+
+    val result = cmd ! ProcessLogger(log => {
+      if(log.contains(search))
+        builder.append(s"$log\n")
+    })
+
+    (result, builder)
   }
 }

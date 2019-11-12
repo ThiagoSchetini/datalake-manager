@@ -2,11 +2,9 @@ package br.com.bvs.datalake.helper
 
 import java.io.FileInputStream
 import java.util.Properties
-
 import scala.concurrent.duration._
 import akka.util.Timeout
 import br.com.bvs.datalake.model.{CoreMetadata, SparkMetadata}
-
 import scala.language.postfixOps
 
 object PropertiesHelper {
@@ -18,16 +16,16 @@ object PropertiesHelper {
     props
   }
 
-  def getKerberosProps: Properties = {
-    readProperties("kerberos")
-  }
-
   private def getCoreProps: Properties = {
     readProperties("core")
   }
 
   private def getSparkProps: Properties = {
     readProperties("spark")
+  }
+
+  def getKerberosProps: Properties = {
+    readProperties("kerberos")
   }
 
   def getCoreMetadata: CoreMetadata = {
@@ -53,6 +51,9 @@ object PropertiesHelper {
 
     SparkMetadata(
       props.getProperty("spark.submit.production").toBoolean,
+      props.getProperty("spark.log.search"),
+      props.getProperty("spark.submit.cmd"),
+      props.getProperty("spark.deploy.mode"),
       props.getProperty("spark.jar"),
       props.getProperty("yarn.queue")
     )
