@@ -1,8 +1,9 @@
 # BVS
 deploy.sh
 
-# Spark
-spark-warehouse/
+# spark
+spark-warehouse
+metastore_db
 
 # general
 *.class
