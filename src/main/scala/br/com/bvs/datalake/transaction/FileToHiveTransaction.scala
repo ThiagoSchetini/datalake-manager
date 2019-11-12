@@ -4,17 +4,15 @@ import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
 import akka.util.Timeout
 import akka.pattern.ask
-
 import scala.concurrent.Await
 import scala.sys.process._
 import org.apache.hadoop.fs.Path
 import java.sql.Connection
-
 import br.com.bvs.datalake.core.HivePool.GetHiveConnection
 import br.com.bvs.datalake.helper._
 import br.com.bvs.datalake.io.HiveIO
 import br.com.bvs.datalake.io.HiveIO.{CheckTable, DatabaseAndTableChecked}
-import br.com.bvs.datalake.model.{Developer, Production, SmartContract, SubmitMetadata}
+import br.com.bvs.datalake.model.{SmartContract, SubmitMetadata}
 import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
 
 object FileToHiveTransaction {
@@ -47,7 +45,7 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
   override def receive: Receive = {
     case Start =>
       log.info(s"start: ${path.getName}")
-      val fields = (sm.destinationFields, sm.destinationTypes).zipped.map((_,_))
+      val fields = (sm.destinationFields, sm.destinationTypes).zipped.map((_,_)).toList
       hiveIO ! CheckTable(hiveConn, sm.destinationDatabase, sm.destinationTable, sm.destinationPath, fields)
 
     case DatabaseAndTableChecked =>
