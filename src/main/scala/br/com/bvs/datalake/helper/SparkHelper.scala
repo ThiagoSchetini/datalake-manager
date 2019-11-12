@@ -1,6 +1,6 @@
 package br.com.bvs.datalake.helper
 
-import br.com.bvs.datalake.model.{Developer, Production, SubmitMetadata}
+import br.com.bvs.datalake.model.SubmitMetadata
 
 object SparkHelper {
   private val multiply = 1024
@@ -38,33 +38,29 @@ object SparkHelper {
   private val yarnMaxRetries = "spark.yarn.maxAppAttempts"
   private val shuffleMaxRetries = "spark.shuffle.io.maxRetries"
 
-  def createSubmit(t: SubmitMetadata): Seq[String] = t match {
-    case Developer(submit, mode, jar) =>
-      Seq(submit, masterFlag, master, modeFlag, mode, jar)
+  def createSubmit(meta: SubmitMetadata): Seq[String] = {
+    val overhead = meta.driverMemory.*(multiply)./(factor)
 
-    case Production(submit, mode, jar, queue, mem, cores, executors, eMem, eCores, shuffleConn, retries) =>
-      val overhead = mem.*(multiply)./(factor)
-
-      Seq(submit,
-          masterFlag,     master,
-          modeFlag,       mode,
-          queueFlag,      queue,
-          memFlag,        s"${mem}G",
-          coresFlag,      s"$cores",
-          executorsFlag,  s"$executors",
-          eMemFlag,       s"${eMem}G",
-          eCoresFlag,     s"$eCores",
-          confFlag,       s"$offHeapEnabled=true",
-          confFlag,       s"$offHeapSize=$overhead",
-          confFlag,       s"$memOverhead=$overhead",
-          confFlag,       s"$eMemOverhead=$overhead",
-          confFlag,       resultsFromExecutorsToNoLimits,
-          confFlag,       jvmYoungGenTuning,
-          confFlag,       useKryoSerializer,
-          confFlag,       s"$shuffleParallelConn=$shuffleConn",
-          confFlag,       s"$yarnMaxRetries=$retries",
-          confFlag,       s"$shuffleMaxRetries=$retries",
-          jar
-      )
+    Seq(meta.submit,
+        masterFlag,     master,
+        modeFlag,       meta.mode,
+        queueFlag,      meta.queue,
+        memFlag,        s"${meta.driverMemory}G",
+        coresFlag,      s"${meta.driverCores}",
+        executorsFlag,  s"${meta.executors}",
+        eMemFlag,       s"${meta.executorMemory}G",
+        eCoresFlag,     s"${meta.executorCores}",
+        confFlag,       s"$offHeapEnabled=true",
+        confFlag,       s"$offHeapSize=$overhead",
+        confFlag,       s"$memOverhead=$overhead",
+        confFlag,       s"$eMemOverhead=$overhead",
+        confFlag,       resultsFromExecutorsToNoLimits,
+        confFlag,       jvmYoungGenTuning,
+        confFlag,       useKryoSerializer,
+        confFlag,       s"$shuffleParallelConn=${meta.shuffleParallelConn}",
+        confFlag,       s"$yarnMaxRetries=${meta.retries}",
+        confFlag,       s"$shuffleMaxRetries=${meta.retries}",
+        meta.jar
+    )
   }
 }

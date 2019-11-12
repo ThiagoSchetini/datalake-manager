@@ -4,15 +4,17 @@ import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
 import akka.util.Timeout
 import akka.pattern.ask
+
 import scala.concurrent.Await
 import scala.sys.process._
 import org.apache.hadoop.fs.Path
 import java.sql.Connection
+
 import br.com.bvs.datalake.core.HivePool.GetHiveConnection
 import br.com.bvs.datalake.helper._
 import br.com.bvs.datalake.io.HiveIO
 import br.com.bvs.datalake.io.HiveIO.{CheckTable, DatabaseAndTableChecked}
-import br.com.bvs.datalake.model.{Developer, Production, SmartContract}
+import br.com.bvs.datalake.model.{Developer, Production, SmartContract, SubmitMetadata}
 import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
 
 object FileToHiveTransaction {
@@ -29,6 +31,7 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
   private var hiveConn: Connection = _
   private var hiveIO: ActorRef = _
   private var cmd: Seq[String] = _
+  private var submitMeta: SubmitMetadata = _
   private val sparkFlow = "CSVToParquet"
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
@@ -51,8 +54,8 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
       log.info(s"checked: ${sm.destinationDatabase}.${sm.destinationTable}")
       val meta = PropertiesHelper.getSparkMetadata
 
+      /* start TODO -> send ! YarnResourceCheck (tunning params) */
       if (meta.production) {
-        /* TODO create this params by job on demand */
         val mem = 24
         val cores = 12
         val executors = 3
@@ -60,12 +63,20 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
         val eCores = 12
         val connections = 3
         val retries = 19
+        submitMeta = SubmitMetadata(meta.submit, meta.mode, meta.jar, meta.queue, mem, cores, executors, eMem, eCores, connections, retries)
+      } else {
+        val mem = 2
+        val cores = 2
+        val executors = 2
+        val eMem = 2
+        val eCores = 2
+        val connections = 2
+        val retries = 10
+        submitMeta = SubmitMetadata(meta.submit, meta.mode, meta.jar, meta.queue, mem, cores, executors, eMem, eCores, connections, retries)
+      }
+      /* end TODO */
 
-        cmd = SparkHelper.createSubmit(
-          Production(meta.submit, meta.mode, meta.jar, meta.queue, mem, cores, executors, eMem, eCores, connections, retries))
-
-      } else
-        cmd = SparkHelper.createSubmit(Developer(meta.submit, meta.mode, meta.jar))
+      cmd = SparkHelper.createSubmit(submitMeta)
 
       // TODO add to submit the spark method and paths
       val result = sparkSubmit(meta.search, cmd)
