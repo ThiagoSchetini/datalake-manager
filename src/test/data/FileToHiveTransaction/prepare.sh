@@ -39,4 +39,6 @@ hdfs dfs -rm -R -skipTrash ${sourcePath2} 2>/dev/null
 hdfs dfs -mkdir -p ${sourcePath2}
 hdfs dfs -copyFromLocal ${testSource2} ${sourcePath2}
 hdfs dfs -copyFromLocal ${testSource3} ${sourcePath2}
+
+echo "[INFO] FileToHiveTransaction: drop table types on Hive"
 hive -e "drop table if exists types;"
