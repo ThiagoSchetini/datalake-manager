@@ -10,4 +10,8 @@ case class SubmitMetadata(submit: String,
                           executorMemory: Int,
                           executorCores: Int,
                           shuffleParallelConn: Int,
-                          retries: Int)
+                          retries: Int,
+                          source: String,
+                          destiny: String,
+                          overwrite: Boolean,
+                          pipeline: String)

@@ -127,7 +127,7 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <executions>
                     <execution>
-                        <id>Renaming build artifacts</id>
+                        <id>Preparing Test Data for Datalake Manager</id>
                         <phase>test</phase>
                         <goals>
                             <goal>exec</goal>
@@ -135,6 +135,17 @@
                         <configuration>
                             <executable>bash</executable>
                             <commandlineArgs>prepare-test-data.sh</commandlineArgs>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>Deploying local for complete datalake tests</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>bash</executable>
+                            <commandlineArgs>local-deploy.sh</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 echo "[INFO] Preparing environment for tests ... "
+testroot=src/test/data
 
 echo "[INFO] Database: testdb"
 hive -e "create database if not exists testdb;"
 
-sh src/test/data/SmartContractRanger/prepare.sh
-sh src/test/data/FileToHiveTransaction/prepare.sh
+sh ${testroot}/SmartContractRanger/prepare.sh
+sh ${testroot}/FileToHiveTransaction/prepare.sh

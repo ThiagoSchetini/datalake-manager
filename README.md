@@ -1,15 +1,18 @@
 # Datalake Manager
-The "SM" or "sm" symbol means: Smart Contract
+Reactive system build up on AKKA actors system. Schedule, invoke and monitor business tasks on Big Data cluster!
 
-... to continue with more instructions
+The "SM" or "sm" signum: Smart Contract
+
+WARNING: clone on ~/repository/datalake
 
 ### requirements
-Up and running non kerberos environment:
+Up and running environment:
 
     - UNIX
     - JDK 8 Update 221
     - Maven 3+
-    - Hadoop 2.6.0
+    - Hadoop 2.6.0 
+    - Yarn 2.6.0 (with default queue set)
     - Hive 1.1.0
     - HiveServer2 1.1.0
     - Spark 2.1.0
@@ -28,7 +31,11 @@ Change your OS username:
 ### how to run:
 From the root folder, run: 
 
-`sh execute.sh`
+`mvn install`
+
+Them:
+
+`sh start-manager.sh`
 
 ### Tuning JVM for production:
 Use this flags on JVM to optimize young generation memory and make it elastic to OS:

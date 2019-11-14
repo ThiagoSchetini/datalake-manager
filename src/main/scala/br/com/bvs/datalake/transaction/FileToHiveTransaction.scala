@@ -51,35 +51,42 @@ class FileToHiveTransaction(path: Path, sm: SmartContract, hivePool: ActorRef, t
     case DatabaseAndTableChecked =>
       log.info(s"checked: ${sm.destinationDatabase}.${sm.destinationTable}")
       val meta = PropertiesHelper.getSparkMetadata
+      var mem, cores, executors, eMem, eCores, connections, retries = 2
 
-      /* start TODO -> send ! YarnResourceCheck (tunning params) */
       if (meta.production) {
-        val mem = 24
-        val cores = 12
-        val executors = 3
-        val eMem = 16
-        val eCores = 12
-        val connections = 3
-        val retries = 19
-        submitMeta = SubmitMetadata(meta.submit, meta.mode, meta.jar, meta.queue, mem, cores, executors, eMem, eCores, connections, retries)
-      } else {
-        val mem = 2
-        val cores = 2
-        val executors = 2
-        val eMem = 2
-        val eCores = 2
-        val connections = 2
-        val retries = 10
-        submitMeta = SubmitMetadata(meta.submit, meta.mode, meta.jar, meta.queue, mem, cores, executors, eMem, eCores, connections, retries)
+        /* TODO remove this if, send ! YarnResourceCheck (tunning params) */
+        mem = 24
+        cores = 12
+        executors = 3
+        eMem = 16
+        eCores = 12
+        connections = 3
+        retries = 19
       }
-      /* end TODO */
 
-      cmd = SparkHelper.createSubmit(submitMeta)
+      submitMeta = SubmitMetadata(
+        meta.submit,
+        meta.mode,
+        meta.jar,
+        meta.queue,
+        mem,
+        cores,
+        executors,
+        eMem,
+        eCores,
+        connections,
+        retries,
+        sm.sourcePath,
+        sm.destinationPath,
+        sm.destinationOverwrite,
+        sm.pipeline)
 
-      // TODO add to submit the spark method and paths
+      cmd = SparkHelper.createSparkSubmit(submitMeta)
+
       val result = sparkSubmit(meta.search, cmd)
       println(result._1)
       println(result._2.mkString)
+
 
     case Failure(e) =>
       log.info(s"Transaction failed for ${path.getName}: ${e.getMessage}")

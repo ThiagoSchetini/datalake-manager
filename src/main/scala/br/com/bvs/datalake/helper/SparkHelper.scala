@@ -38,7 +38,7 @@ object SparkHelper {
   private val yarnMaxRetries = "spark.yarn.maxAppAttempts"
   private val shuffleMaxRetries = "spark.shuffle.io.maxRetries"
 
-  def createSubmit(meta: SubmitMetadata): Seq[String] = {
+  def createSparkSubmit(meta: SubmitMetadata): Seq[String] = {
     val overhead = meta.driverMemory.*(multiply)./(factor)
 
     Seq(meta.submit,
@@ -60,7 +60,11 @@ object SparkHelper {
         confFlag,       s"$shuffleParallelConn=${meta.shuffleParallelConn}",
         confFlag,       s"$yarnMaxRetries=${meta.retries}",
         confFlag,       s"$shuffleMaxRetries=${meta.retries}",
-        meta.jar
+        meta.jar,
+        meta.source,
+        meta.destiny,
+        meta.overwrite.toString,
+        meta.pipeline
     )
   }
 }

@@ -109,7 +109,8 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
       props.getProperty("destination.path"),
       props.getProperty("destination.database"),
       props.getProperty("destination.table"),
-      props.getProperty("destination.overwrite").toBoolean
+      props.getProperty("destination.overwrite").toBoolean,
+      props.getProperty("pipeline")
     )
   }
 
