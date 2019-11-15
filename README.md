@@ -17,6 +17,10 @@ Up and running environment:
     - HiveServer2 1.1.0
     - Spark 2.1.0
 
+Them:
+
+    - datalake-spark project installed (mvn install)
+
 ### how to config:
 Open src/main/resources/core.properties
 
