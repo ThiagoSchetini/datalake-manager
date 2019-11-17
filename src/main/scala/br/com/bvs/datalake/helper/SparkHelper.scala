@@ -33,7 +33,7 @@ object SparkHelper {
   private val jvmYoungGenTuning = "spark.executor.extraJavaOptions=-XX:+UseG1GC -XX:NewRatio=1 -XX:SurvivorRatio=128 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=5"
   private val useKryoSerializer = "spark.serializer=org.apache.spark.serializer.KryoSerializer"
 
-  /* ethernet stability tolerance */
+  /* network stability tolerance + throughput (numConnectionsPerPeer) */
   private val shuffleParallelConn = "spark.shuffle.io.numConnectionsPerPeer"
   private val yarnMaxRetries = "spark.yarn.maxAppAttempts"
   private val shuffleMaxRetries = "spark.shuffle.io.maxRetries"

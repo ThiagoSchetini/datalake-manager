@@ -1,9 +1,9 @@
 # Datalake Manager
 Reactive system build up on AKKA actors system. Schedule, invoke and monitor business tasks on Big Data cluster!
 
-The "SM" or "sm" signum: Smart Contract
+Warning: Clone on ~/repository/datalake 
 
-WARNING: clone on ~/repository/datalake
+"SM" or "sm" signum = Smart Contract
 
 ### requirements
 Up and running environment:
@@ -17,51 +17,57 @@ Up and running environment:
     - HiveServer2 1.1.0
     - Spark 2.1.0
 
-Them:
+datalake-spark project required:
 
-    - datalake-spark project installed (mvn install)
+    - clone datalake-spark inside ~/repository/datalake 
+    - "mvn package" inside datalake-spark root folder
 
-### how to config:
+### check the core.properties:
 Open src/main/resources/core.properties
 
 Change to a valid hadoop configuration directory:
 
 `hadoop.conf.dir=/your/hadoop/env/config`
 
-Change your OS username:
+Change the username to your OS username on this connection string:
 
 `hiveserver2.url=jdbc:hive2://localhost:10000/;user=username`
 
 ### how to run:
 From the root folder, run: 
 
-`mvn install`
+`mvn package`
 
 Them:
 
 `sh start-manager.sh`
 
 ### Tuning JVM for production:
-Use this flags on JVM to optimize young generation memory and make it elastic to OS:
-```
--XX:+UseG1GC 
--Xmx8G 
--XX:NewRatio=1 
--XX:SurvivorRatio=128 
--XX:MinHeapFreeRatio=5 
--XX:MaxHeapFreeRatio=5 
-```
+Use this flags on JVM as example to optimize young generation memory and make it elastic to OS:
+
+    -XX:+UseG1GC 
+    -Xms8G
+    -Xmx24G 
+    -XX:NewRatio=1 
+    -XX:SurvivorRatio=128 
+    -XX:MinHeapFreeRatio=5 
+    -XX:MaxHeapFreeRatio=5 
+
 
 ### how to debug on InteliJ:
-Open "Run/Debug Configurations":
+Considering your cloned on "~/repository/datalake" Open "Run/Debug Configurations":
 
-`Add New Configuration: Application`
+Add New Configuration: `Application`
 
-`Main Class: br.com.bvs.datalake.core.Initializer`
+Main Class: `br.com.bvs.datalake.core.Initializer`
 
-`VM options: -XX:+UseG1GC -Xmx8G -XX:NewRatio=1 -XX:SurvivorRatio=128 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=5`
+VM options: `-XX:+UseG1GC -Xmx8G -XX:NewRatio=1 -XX:SurvivorRatio=128 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=5`
 
-`Environment variables: DATALAKE_MANAGER_PROPS=src/main/resources`
+Environment variables: 
+
+    DATALAKE_MANAGER_PROPS=src/main/resources
+    DATALAKE_SPARK_PROPS=../datalake-spark/src/main/resources
+    DATALAKE_SPARK_JARS=../datalake-spark/target
 
 ### references
 Cassandra: `https://medium.com/rahasak/scala-cake-pattern-e0cd894dae4e`

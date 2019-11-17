@@ -8,11 +8,12 @@ import br.com.bvs.datalake.model.{CoreMetadata, SparkMetadata}
 import scala.language.postfixOps
 
 object PropertiesHelper {
-  private val appPropertiesPath = sys.env.get("DATALAKE_MANAGER_PROPS").mkString
+  private val datalakeManagerProps = sys.env.get("DATALAKE_MANAGER_PROPS").mkString
+  private val datalakeSparkJars = sys.env.get("DATALAKE_SPARK_JARS").mkString
 
   private def readProperties(name: String) = {
     val props = new Properties()
-    props.load(new FileInputStream(s"$appPropertiesPath/$name.properties"))
+    props.load(new FileInputStream(s"$datalakeManagerProps/$name.properties"))
     props
   }
 
@@ -54,7 +55,7 @@ object PropertiesHelper {
       props.getProperty("spark.log.search"),
       props.getProperty("spark.submit.cmd"),
       props.getProperty("spark.deploy.mode"),
-      props.getProperty("spark.jar"),
+      s"$datalakeSparkJars/${props.getProperty("spark.jar")}",
       props.getProperty("yarn.queue")
     )
   }

@@ -137,17 +137,6 @@
                             <commandlineArgs>prepare-test-data.sh</commandlineArgs>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>Deploying local for complete datalake tests</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>bash</executable>
-                            <commandlineArgs>local-deploy.sh</commandlineArgs>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
 
