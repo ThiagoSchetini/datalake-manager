@@ -1,30 +1,26 @@
 #!/usr/bin/env bash
 
-testPath=src/test/data/SmartContractRanger
-hdfsPath=/br/com/bvs/datalake/core/SmartContractRanger
+title="SmartContractRanger test data:"
 
-sm1=${testPath}/sm1.properties
-sm2=${testPath}/sm2.properties
-sm3=${testPath}/sm3.properties
-sm4=${testPath}/sm4.properties
+#-- local --#
+test=src/test/data/SmartContractRanger
+sm=${test}/placebo.properties
 
-watch1=${hdfsPath}/watch1
-watch2=${hdfsPath}/watch2
-ongoing1=${hdfsPath}/watch1/ongoing
-ongoing2=${hdfsPath}/watch2/ongoing
+#-- hdfs --#
+testHdfs=/br/com/bvs/datalake/core/SmartContractRanger
+watch1=${testHdfs}/watch1
+watch2=${testHdfs}/watch2
+ongoing=${testHdfs}/watch1/ongoing
 
-echo "[INFO] SmartContractRanger: prepare to watch from folders"
+echo "[TEST] ${title} watch from 2 folders on parallel"
 hdfs dfs -rm -R -skipTrash ${watch1} 2>/dev/null
 hdfs dfs -rm -R -skipTrash ${watch2} 2>/dev/null
 hdfs dfs -mkdir -p ${watch1}
 hdfs dfs -mkdir -p ${watch2}
-hdfs dfs -copyFromLocal ${sm1} ${watch1}
-hdfs dfs -copyFromLocal ${sm2} ${watch2}
+hdfs dfs -copyFromLocal ${sm} ${watch1}
+hdfs dfs -copyFromLocal ${sm} ${watch2}
 
-echo "[INFO] SmartContractRanger: prepare to watch from ongoing folders"
-hdfs dfs -rm -R -skipTrash ${ongoing1} 2>/dev/null
-hdfs dfs -rm -R -skipTrash ${ongoing2} 2>/dev/null
-hdfs dfs -mkdir -p ${ongoing1}
-hdfs dfs -mkdir -p ${ongoing2}
-hdfs dfs -copyFromLocal ${sm3} ${ongoing1}
-hdfs dfs -copyFromLocal ${sm4} ${ongoing2}
+echo "[TEST] ${title} look for sm on ongoing dir"
+hdfs dfs -rm -R -skipTrash ${ongoing} 2>/dev/null
+hdfs dfs -mkdir -p ${ongoing}
+hdfs dfs -copyFromLocal ${sm} ${ongoing}

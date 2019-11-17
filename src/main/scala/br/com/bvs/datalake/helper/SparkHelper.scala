@@ -7,7 +7,7 @@ object SparkHelper {
   private val factor = 4
 
   /* basic */
-  private val confFlag = "--conf"
+  private val conf = "--conf"
   private val masterFlag = "--master"
   private val master = "yarn"
   private val modeFlag = "--deploy-mode"
@@ -50,16 +50,16 @@ object SparkHelper {
         executorsFlag,  s"${meta.executors}",
         eMemFlag,       s"${meta.executorMemory}G",
         eCoresFlag,     s"${meta.executorCores}",
-        confFlag,       s"$offHeapEnabled=true",
-        confFlag,       s"$offHeapSize=$overhead",
-        confFlag,       s"$memOverhead=$overhead",
-        confFlag,       s"$eMemOverhead=$overhead",
-        confFlag,       resultsFromExecutorsToNoLimits,
-        confFlag,       jvmYoungGenTuning,
-        confFlag,       useKryoSerializer,
-        confFlag,       s"$shuffleParallelConn=${meta.shuffleParallelConn}",
-        confFlag,       s"$yarnMaxRetries=${meta.retries}",
-        confFlag,       s"$shuffleMaxRetries=${meta.retries}",
+        conf,           s"$offHeapEnabled=true",
+        conf,           s"$offHeapSize=$overhead",
+        conf,           s"$memOverhead=$overhead",
+        conf,           s"$eMemOverhead=$overhead",
+        conf,           resultsFromExecutorsToNoLimits,
+        conf,           jvmYoungGenTuning,
+        conf,           useKryoSerializer,
+        conf,           s"$shuffleParallelConn=${meta.shuffleParallelConn}",
+        conf,           s"$yarnMaxRetries=${meta.retries}",
+        conf,           s"$shuffleMaxRetries=${meta.retries}",
         meta.jar,
         meta.source,
         meta.destiny,

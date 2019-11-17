@@ -13,4 +13,4 @@ case class SmartContract(sourceServer: String,
                          destinationDatabase: String,
                          destinationTable: String,
                          destinationOverwrite: Boolean,
-                         pipeline: String)
+                         transaction: String)
