@@ -7,28 +7,30 @@ import akka.pattern.ask
 
 import scala.concurrent.Await
 import scala.sys.process._
-import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.{FileSystem, Path}
 import java.sql.Connection
 
 import br.com.bvs.datalake.core.HivePool.GetHiveConnection
 import br.com.bvs.datalake.core.SmartContractRanger.{TransactionFailed, TransactionSuccess}
 import br.com.bvs.datalake.helper._
-import br.com.bvs.datalake.io.HiveIO
+import br.com.bvs.datalake.io.HdfsIO.RemoveFromPath
+import br.com.bvs.datalake.io.{HdfsIO, HiveIO}
 import br.com.bvs.datalake.io.HiveIO.{CheckTable, DatabaseAndTableChecked}
 import br.com.bvs.datalake.model.{SmartContract, SubmitMetadata}
 import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
 
 object FileToHiveTransaction {
-  def props(path: Path, sm: SmartContract, hivePool: ActorRef, timeout: Timeout):Props =
-    Props(new FileToHiveTransaction(path, sm, hivePool, timeout))
+  def props(path: Path, sm: SmartContract, hdfsClient: FileSystem, hivePool: ActorRef, timeout: Timeout):Props =
+    Props(new FileToHiveTransaction(path, sm, hdfsClient, hivePool, timeout))
 
   case object Start
 }
 
-class FileToHiveTransaction(smPath: Path, sm: SmartContract, hivePool: ActorRef, timeout: Timeout) extends Actor with ActorLogging {
+class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSystem, hivePool: ActorRef, timeout: Timeout) extends Actor with ActorLogging {
   implicit val clientTimeout: Timeout = timeout
   private var hiveConn: Connection = _
   private var hiveIO: ActorRef = _
+  private var hdfsIO: ActorRef = _
   private var cmd: Seq[String] = _
   private var submitMeta: SubmitMetadata = _
   private val pipeline = "CSVToParquet"
@@ -37,6 +39,7 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hivePool: ActorRef,
     val futureHiveConnection = hivePool ? GetHiveConnection
     hiveConn = Await.result(futureHiveConnection, clientTimeout.duration).asInstanceOf[Connection]
     hiveIO = context.actorOf(HiveIO.props)
+    hdfsIO = context.actorOf(HdfsIO.props)
   }
 
   override def receive: Receive = {
@@ -79,21 +82,21 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hivePool: ActorRef,
         pipeline)
 
       cmd = SparkHelper.createSparkSubmit(submitMeta)
+      val result = executeSparkSubmit(meta.search, cmd)
 
-      val result = sparkSubmit(meta.search, cmd)
-      println(result._1)
-      println(result._2.mkString)
-
-      if (result._1 == 0)
+      if (result._1 == 0) {
+        if (sm.sourceRemove)
+          hdfsIO ! RemoveFromPath(hdfsClient, new Path(sm.sourcePath))
         context.parent ! TransactionSuccess(smPath)
-      else
+      } else {
         context.parent ! TransactionFailed(smPath, result._2.mkString)
+      }
 
     case Failure(e) =>
       context.parent ! TransactionFailed(smPath, e.getMessage)
   }
 
-  private def sparkSubmit(search: String, cmd: Seq[String]): (Int, StringBuilder) = {
+  private def executeSparkSubmit(search: String, cmd: Seq[String]): (Int, StringBuilder) = {
     val builder = new StringBuilder()
 
     val result = cmd ! ProcessLogger(log => {

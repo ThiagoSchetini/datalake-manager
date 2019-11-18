@@ -27,6 +27,8 @@ object HdfsIO {
 
   case class MoveToSubDir(hdfsClient: FileSystem, sourcePath: Path, target: String)
   case class MoveTo(hdfsClient: FileSystem, sourcePath: Path, targetPath: Path)
+
+  case class RemoveFromPath(hdfsClient: FileSystem, path: Path)
 }
 
 class HdfsIO extends Actor with ActorLogging {
@@ -128,5 +130,17 @@ class HdfsIO extends Actor with ActorLogging {
 
       if (result)
         log.info(s"$sourcePath moved to $targetPath")
+
+    case RemoveFromPath(hdfsClient, path) =>
+      if (hdfsClient.isFile(path)) {
+        val result = hdfsClient.delete(path, false)
+        println(result)
+      }
+
+      else if (hdfsClient.isDirectory(path)) {
+        val all = s"${path.toString}/*"
+        val result = hdfsClient.delete(new Path(all), true)
+        println(result)
+      }
   }
 }

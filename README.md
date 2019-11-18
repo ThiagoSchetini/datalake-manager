@@ -68,6 +68,11 @@ Environment variables:
     DATALAKE_MANAGER_PROPS=src/main/resources
     DATALAKE_SPARK_PROPS=../datalake-spark/src/main/resources
     DATALAKE_SPARK_JARS=../datalake-spark/target
+    
+Before launch: 
+
+    check build is added
+    add: Run Maven Goal/test
 
 ### references
 Cassandra: `https://medium.com/rahasak/scala-cake-pattern-e0cd894dae4e`

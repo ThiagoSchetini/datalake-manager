@@ -6,5 +6,6 @@ testroot=src/test/data
 echo "[INFO] Database: testdb"
 hive -e "create database if not exists testdb;"
 
+sh ${testroot}/sm/prepare.sh
 sh ${testroot}/SmartContractRanger/prepare.sh
 sh ${testroot}/FileToHiveTransaction/prepare.sh

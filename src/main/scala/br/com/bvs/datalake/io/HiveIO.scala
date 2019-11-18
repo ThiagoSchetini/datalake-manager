@@ -20,7 +20,7 @@ class HiveIO extends Actor with ActorLogging {
   override def receive: Receive = {
     case CheckTable(conn, database, table, location, fields) =>
       val databaseQuery = s"create database if not exists $database"
-      val tableQuery = createTableQuery(database, table, location, fields)
+      val tableQuery = buildQueryCreateTable(database, table, location, fields)
 
       val stmt = conn.createStatement()
       stmt.execute(databaseQuery)
@@ -28,7 +28,7 @@ class HiveIO extends Actor with ActorLogging {
       sender ! DatabaseAndTableChecked
   }
 
-  private def createTableQuery(database: String, table: String, location: String, fields: List[(String, String)]): String = {
+  private def buildQueryCreateTable(database: String, table: String, location: String, fields: List[(String, String)]): String = {
     val builder = new StringBuilder
     builder
       .append(s"create external table if not exists $database.$table (")

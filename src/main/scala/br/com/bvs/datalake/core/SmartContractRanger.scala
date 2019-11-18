@@ -3,14 +3,12 @@ package br.com.bvs.datalake.core
 import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.apache.hadoop.fs.{FileSystem, Path}
-
 import scala.collection.mutable
 import java.io.ByteArrayInputStream
 import java.util.{Calendar, Properties}
 import java.security.MessageDigest
 import java.math.BigInteger
 import java.time.Instant
-
 import br.com.bvs.datalake.core.Ernesto.WatchSmartContractsOn
 import br.com.bvs.datalake.core.SmartContractRanger.{TransactionFailed, TransactionSuccess}
 import br.com.bvs.datalake.helper.PropertiesHelper
@@ -54,44 +52,78 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
   override def receive: Receive = {
     case msg: Failure => context.parent.forward(msg)
 
-    case PathsList(paths) =>
-      if (paths.nonEmpty) {
-        paths
-          .filter(_.getName.contains(meta.smSufix))
-          .foreach(p => {
-            log.info(s"reading smart contract ${p.getName}")
-            hdfsIO ! ReadFile(hdfsClient, p)
-          })
-      }
+    case PathsList(paths) => onErnestoGotSmartContracts(paths)
 
-    case DataFromFile(smPath, smData) =>
-      val props = new Properties()
-      props.load(new ByteArrayInputStream(smData.getBytes()))
-      val sm = buildSmartContract(props)
+    case DataFromFile(smPath, smData) => onSmartContractDataReceived(smPath, smData)
 
-      val check = validateSmartContract(sm)
-      if (!check) {
-        failSmartContract(smPath, "sm not valid")
+    case TransactionSuccess(path) => onTransactionSuccess(path)
 
+    case TransactionFailed(path, errorLog) => onTransactionFail(path, errorLog)
+  }
+
+  private def createTransaction(transaction: String, path: Path, sm: SmartContract, hash: String): ActorRef = {
+    transaction match {
+      case "FileToHiveTransaction" =>
+        context.actorOf(FileToHiveTransaction.props(path, sm, this.hdfsClient, this.hivePool, meta.clientTimeout), s"transaction-$hash")
+
+      case _ => null
+    }
+  }
+
+  private def onErnestoGotSmartContracts(paths: List[Path]): Unit = {
+    if (paths.nonEmpty) {
+      paths
+        .filter(_.getName.contains(meta.smSufix))
+        .foreach(p => {
+          log.info(s"reading smart contract ${p.getName}")
+          hdfsIO ! ReadFile(hdfsClient, p)
+        })
+    }
+  }
+
+  private def onSmartContractDataReceived(smPath: Path, smData: String): Unit = {
+    val props = new Properties()
+    props.load(new ByteArrayInputStream(smData.getBytes()))
+    val sm = buildSmartContract(props)
+
+    val check = validateSmartContract(sm)
+    if (!check) {
+      onTransactionFail(smPath, "sm not valid")
+
+    } else {
+      moveSmartContractToOngoing(smPath)
+      val hash = hashSmartContract(smData.getBytes())
+      val transaction = createTransaction(sm.transaction, smPath, sm, hash)
+
+      if (transaction == null) {
+        onTransactionFail(smPath, s"transaction ${sm.transaction} is not valid")
       } else {
-        moveSmartContractToOngoing(smPath)
-        val hash = hashSmartContract(smData.getBytes())
-        val transaction = createTransaction(sm.transaction, smPath, sm, hivePool, hash)
-
-        if (transaction == null) {
-          failSmartContract(smPath, s"transaction ${sm.transaction} is not valid")
-        } else {
-          ongoingSm += smPath -> (transaction, serializeSmartContract(smPath.getName, sm, hash))
-          transaction ! Start
-        }
+        ongoingSm += smPath -> (transaction, serializeSmartContract(smPath.getName, sm, hash))
+        transaction ! Start
       }
+    }
+  }
 
-    case TransactionSuccess(path) =>
-      successSmartContract(path)
+  private def onTransactionFail(smPath: Path, cause: String): Unit = {
+    val tuple = checkOngoingAndTarget(smPath, meta.failDirName)
+    hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
 
-    case TransactionFailed(path, errorLog) =>
-      failSmartContract(path, errorLog)
+    // TODO create sm.error file
+    // TODO context.stop(transaction) (stop the transaction actor)
 
+    ongoingSm.remove(smPath)
+    log.error(s"failed: $smPath, $cause")
+  }
+
+  private def onTransactionSuccess(smPath: Path): Unit = {
+    val tuple = checkOngoingAndTarget(smPath, meta.doneDirName)
+    hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
+
+    // TODO get appender, put the serialized line to HDFSIO file
+    // TODO context.stop(transaction) (stop the transaction actor)
+
+    ongoingSm.remove(smPath)
+    log.info(s"success: $smPath")
   }
 
   private def buildSmartContract(props: Properties): SmartContract = {
@@ -100,8 +132,9 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
       props.getProperty("source.path"),
       props.getProperty("source.header").toBoolean,
       props.getProperty("source.delimiter"),
-      props.getProperty("source.boolean.true"),
-      props.getProperty("source.boolean.false"),
+      props.getProperty("source.remove").toBoolean,
+      props.getProperty("source.true.format"),
+      props.getProperty("source.false.format"),
       props.getProperty("source.time.format"),
       props.getProperty("destination.fields").split(",").toList,
       props.getProperty("destination.types").split(",").toList,
@@ -133,17 +166,17 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
 
     smBuilder.append(
       s"""$hash
+         |${Calendar.getInstance.getTime}
          |$smFileName
          |${sm.transaction}
          |${sm.sourceServer}
          |${sm.sourcePath}
-         |${sm.destinationFields}
-         |${sm.destinationTypes}
          |${sm.destinationPath}
          |${sm.destinationDatabase}
          |${sm.destinationTable}
-         |${sm.destinationOverwrite}
-         |${Calendar.getInstance.getTime}"""
+         |${sm.destinationFields}
+         |${sm.destinationTypes}
+         |${sm.destinationOverwrite}"""
         .stripMargin.replaceAll(newline, meta.smDelimiter.toString)).append(newline)
 
     smBuilder.mkString
@@ -157,16 +190,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
     bigInteger.toString(16)
   }
 
-  private def createTransaction(transaction: String, path: Path, sm: SmartContract, hivePool: ActorRef, hash: String): ActorRef = {
-    transaction match {
-      case "FileToHiveTransaction" =>
-        context.actorOf(FileToHiveTransaction.props(path, sm, hivePool, meta.clientTimeout), s"transaction-$hash")
-
-      case _ => null
-    }
-  }
-
-  private def ensureOngoingAndTarget(smPath: Path, target: String): (Path, Path) = {
+  private def checkOngoingAndTarget(smPath: Path, target: String): (Path, Path) = {
     var ongoingPath = smPath
     if (!isOngoing(smPath))
       ongoingPath = new Path(s"${smPath.getParent}/${meta.ongoingDirName}/${smPath.getName}")
@@ -174,27 +198,4 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
     val targetPath = new Path(s"${ongoingPath.getParent.getParent}/$target/${ongoingPath.getName}")
     (ongoingPath, targetPath)
   }
-
-  private def failSmartContract(smPath: Path, cause: String): Unit = {
-    val tuple = ensureOngoingAndTarget(smPath, meta.failDirName)
-    hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
-
-    // TODO create sm.error file
-    // TODO context.stop(transaction) (stop the transaction actor)
-
-    ongoingSm.remove(smPath)
-    log.error(s"failed: $smPath, $cause")
-  }
-
-  private def successSmartContract(smPath: Path): Unit = {
-    val tuple = ensureOngoingAndTarget(smPath, meta.doneDirName)
-    hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
-
-    // TODO get appender, put the serialized line to HDFSIO file
-    // TODO context.stop(transaction) (stop the transaction actor)
-
-    ongoingSm.remove(smPath)
-    log.info(s"success: $smPath")
-  }
-
 }
