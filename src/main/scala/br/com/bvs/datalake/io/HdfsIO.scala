@@ -28,7 +28,7 @@ object HdfsIO {
   case class MoveToSubDir(hdfsClient: FileSystem, sourcePath: Path, target: String)
   case class MoveTo(hdfsClient: FileSystem, sourcePath: Path, targetPath: Path)
 
-  case class RemoveFromPath(hdfsClient: FileSystem, path: Path)
+  case class RemoveDirectory(hdfsClient: FileSystem, path: Path)
 }
 
 class HdfsIO extends Actor with ActorLogging {
@@ -131,16 +131,30 @@ class HdfsIO extends Actor with ActorLogging {
       if (result)
         log.info(s"$sourcePath moved to $targetPath")
 
-    case RemoveFromPath(hdfsClient, path) =>
-      if (hdfsClient.isFile(path)) {
-        val result = hdfsClient.delete(path, false)
-        println(result)
-      }
+    case RemoveDirectory(hdfsClient, path) =>
+      /*
+        warning 1: hdfsClient.isFile doesn't work: returns false even when it is a file
 
-      else if (hdfsClient.isDirectory(path)) {
-        val all = s"${path.toString}/*"
-        val result = hdfsClient.delete(new Path(all), true)
-        println(result)
+        warning 2: when is file, it removes everything inside the directory,
+        but when is directory, it removes the entire directory
+
+        warning 3: for the application, we consider removing always the directory
+       */
+      if (hdfsClient.exists(path)) {
+        var directory = path
+
+        if (isFile(path))
+          directory = path.getParent
+
+        val result = hdfsClient.delete(directory, true)
+
+        if (result)
+          log.info(s"removed directory $directory ")
       }
+  }
+
+  private def isFile(path: Path): Boolean = {
+    val last = path.getName
+    last.contains(".")
   }
 }

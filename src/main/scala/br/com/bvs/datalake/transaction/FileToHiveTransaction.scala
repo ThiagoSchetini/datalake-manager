@@ -13,7 +13,7 @@ import java.sql.Connection
 import br.com.bvs.datalake.core.HivePool.GetHiveConnection
 import br.com.bvs.datalake.core.SmartContractRanger.{TransactionFailed, TransactionSuccess}
 import br.com.bvs.datalake.helper._
-import br.com.bvs.datalake.io.HdfsIO.RemoveFromPath
+import br.com.bvs.datalake.io.HdfsIO.RemoveDirectory
 import br.com.bvs.datalake.io.{HdfsIO, HiveIO}
 import br.com.bvs.datalake.io.HiveIO.{CheckTable, DatabaseAndTableChecked}
 import br.com.bvs.datalake.model.{SmartContract, SubmitMetadata}
@@ -38,8 +38,8 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSys
   override def preStart(): Unit = {
     val futureHiveConnection = hivePool ? GetHiveConnection
     hiveConn = Await.result(futureHiveConnection, clientTimeout.duration).asInstanceOf[Connection]
-    hiveIO = context.actorOf(HiveIO.props)
-    hdfsIO = context.actorOf(HdfsIO.props)
+    hiveIO = context.actorOf(HiveIO.props, "hive-io")
+    hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
   }
 
   override def receive: Receive = {
@@ -85,9 +85,12 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSys
       val result = executeSparkSubmit(meta.search, cmd)
 
       if (result._1 == 0) {
+
         if (sm.sourceRemove)
-          hdfsIO ! RemoveFromPath(hdfsClient, new Path(sm.sourcePath))
+          hdfsIO ! RemoveDirectory(hdfsClient, new Path(sm.sourcePath))
+
         context.parent ! TransactionSuccess(smPath)
+
       } else {
         context.parent ! TransactionFailed(smPath, result._2.mkString)
       }
