@@ -118,8 +118,12 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
     true
   }
 
+  private def isOngoing(smPath: Path): Boolean = {
+    smPath.getParent.getName == meta.ongoingDirName
+  }
+
   private def moveSmartContractToOngoing(smPath: Path): Unit = {
-    if(!smPath.toString.contains(s"${meta.ongoingDirName}"))
+    if(!isOngoing(smPath))
       hdfsIO ! MoveToSubDir(hdfsClient, smPath, meta.ongoingDirName)
   }
 
@@ -162,20 +166,35 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
     }
   }
 
+  private def ensureOngoingAndTarget(smPath: Path, target: String): (Path, Path) = {
+    var ongoingPath = smPath
+    if (!isOngoing(smPath))
+      ongoingPath = new Path(s"${smPath.getParent}/${meta.ongoingDirName}/${smPath.getName}")
+
+    val targetPath = new Path(s"${ongoingPath.getParent.getParent}/$target/${ongoingPath.getName}")
+    (ongoingPath, targetPath)
+  }
+
   private def failSmartContract(smPath: Path, cause: String): Unit = {
-    val msg = s"sm ${smPath.getName} failed: $cause"
-    hdfsIO ! MoveToSubDir(hdfsClient, smPath, meta.failDirName)
+    val tuple = ensureOngoingAndTarget(smPath, meta.failDirName)
+    hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
+
     // TODO create sm.error file
     // TODO context.stop(transaction) (stop the transaction actor)
+
     ongoingSm.remove(smPath)
-    log.error(msg)
+    log.error(s"failed: $smPath, $cause")
   }
 
   private def successSmartContract(smPath: Path): Unit = {
-    hdfsIO ! MoveToSubDir(hdfsClient, smPath, meta.doneDirName)
+    val tuple = ensureOngoingAndTarget(smPath, meta.doneDirName)
+    hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
+
     // TODO get appender, put the serialized line to HDFSIO file
     // TODO context.stop(transaction) (stop the transaction actor)
+
     ongoingSm.remove(smPath)
+    log.info(s"success: $smPath")
   }
 
 }
