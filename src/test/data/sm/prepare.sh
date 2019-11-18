@@ -6,7 +6,7 @@ title="SmartContract:"
 testHdfs=/smartcontract
 
 echo "[TEST] ${title} hdfs destiny dir for all sm's"
-#hdfs dfs -rm -R -skipTrash ${testHdfs} 2>/dev/null
+hdfs dfs -rm -R -skipTrash ${testHdfs} 2>/dev/null
 hdfs dfs -mkdir -p ${testHdfs}
 
 echo "[TEST] ${title} hive smart contract table"
