@@ -27,7 +27,7 @@ DESTINATION_TABLE STRING,\
 DESTINATION_FIELDS ARRAY<STRING>,\
 DESTINATION_TYPES ARRAY<STRING>,\
 DESTINATION_OVERWRITE BOOLEAN) \
-location '/smartcontract' \
 row format delimited \
 fields terminated by '|' \
-collection items terminated by ',';"
+collection items terminated by ','\
+location '/smartcontract';"

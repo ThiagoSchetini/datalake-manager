@@ -13,7 +13,6 @@ object HdfsPool {
   case class Appendable(target: String, appender: FSDataOutputStream, hdfsIO: ActorRef)
   case object GetHDFSClient
   case class GetAppendable(target: String)
-  case class HereGoesTheAppendable(appendable: Appendable)
 }
 
 class HdfsPool extends Actor with ActorLogging {
@@ -21,7 +20,7 @@ class HdfsPool extends Actor with ActorLogging {
   /* one unique client from this pool */
   private var hdfsClient: FileSystem = _
 
-  /* one unique appender per file */
+  /* one unique appender per file from this pool */
   private val appendablePool = mutable.HashMap[String, Appendable]()
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
@@ -40,7 +39,7 @@ class HdfsPool extends Actor with ActorLogging {
 
     case GetAppendable(target: String) =>
       appendablePool.get(target) match {
-        case Some(appendable) => sender ! HereGoesTheAppendable(appendable)
+        case Some(appendable) => sender ! appendable
 
         case None =>
           val targetPath = new Path(target)
@@ -54,7 +53,7 @@ class HdfsPool extends Actor with ActorLogging {
           val io = context.actorOf(HdfsIO.props)
           val appendable = Appendable(target, appender, io)
           appendablePool += s"$target" -> appendable
-          sender ! HereGoesTheAppendable(appendable)
+          sender ! appendable
       }
 
     case Failure(reason) => sender ! Status.Failure(reason)

@@ -3,7 +3,7 @@ Reactive system build up on AKKA actors system. Schedule, invoke and monitor bus
 
 Warning: Clone on ~/repository/datalake 
 
-"SM" or "sm" signum = Smart Contract
+"SM"/"sm" signum = Smart Contract
 
 ### requirements
 Up and running environment:

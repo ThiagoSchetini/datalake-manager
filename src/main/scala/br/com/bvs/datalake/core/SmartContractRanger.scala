@@ -2,14 +2,17 @@ package br.com.bvs.datalake.core
 
 import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.apache.hadoop.fs.{FileSystem, Path}
+import akka.util.Timeout
+import akka.pattern.ask
 import scala.collection.mutable
+import org.apache.hadoop.fs.{FileSystem, Path}
 import java.io.ByteArrayInputStream
 import java.util.{Calendar, Properties}
 import java.security.MessageDigest
 import java.math.BigInteger
 import java.time.Instant
 import br.com.bvs.datalake.core.Ernesto.WatchSmartContractsOn
+import br.com.bvs.datalake.core.HdfsPool.{Appendable, GetAppendable}
 import br.com.bvs.datalake.core.SmartContractRanger.{TransactionFailed, TransactionSuccess}
 import br.com.bvs.datalake.helper.PropertiesHelper
 import br.com.bvs.datalake.io.HdfsIO
@@ -18,24 +21,28 @@ import br.com.bvs.datalake.model.{CoreMetadata, SmartContract}
 import br.com.bvs.datalake.transaction.FileToHiveTransaction
 import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
 
+import scala.concurrent.Await
+
 object SmartContractRanger {
-  def props(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: ActorRef): Props =
-    Props(new SmartContractRanger(hdfsClient, hivePool, ernesto))
+  def props(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: ActorRef, ernesto: ActorRef): Props =
+    Props(new SmartContractRanger(hdfsClient, hdfsPool, hivePool, ernesto))
 
   case class ReadSmartContract(directory: String, filename: String)
   case class TransactionSuccess(smPath: Path)
   case class TransactionFailed(smPath: Path, errorLog: String)
 }
 
-class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: ActorRef) extends Actor with ActorLogging {
-  private var ongoingSm: mutable.HashMap[Path, (ActorRef, String)] = _
+class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: ActorRef, ernesto: ActorRef) extends Actor with ActorLogging {
+  private var ongoingSm: mutable.HashMap[Path, (ActorRef, StringBuilder)] = _
   private var meta: CoreMetadata = _
   private var hdfsIO: ActorRef = _
+  private var smAppendable: Appendable = _
 
   override def preStart(): Unit = {
-    ongoingSm = new mutable.HashMap[Path, (ActorRef, String)]()
+    ongoingSm = new mutable.HashMap[Path, (ActorRef, StringBuilder)]()
     meta = PropertiesHelper.getCoreMetadata
     hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
+    implicit val clientTimeout: Timeout = meta.clientTimeout
 
     meta.smWatchDirs.foreach(dir => {
       hdfsIO ! CheckOrCreateDir(hdfsClient, dir)
@@ -47,6 +54,15 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
       /* only first runtime check on ongoing, in case of application break */
       hdfsIO ! ListFilesFrom(hdfsClient, s"$dir/${meta.ongoingDirName}")
     })
+
+    val futureAppender = hdfsPool ? GetAppendable(meta.smDestinyDir)
+    try {
+      smAppendable = Await.result(futureAppender, meta.clientTimeout.duration).asInstanceOf[Appendable]
+      log.info("HDFS appender to smart contracts ok")
+    } catch {
+      case e: Exception =>
+        context.parent.forward(s"couldn't create HDFS appender to smart contracts: ${e.getMessage}")
+    }
   }
 
   override def receive: Receive = {
@@ -107,10 +123,8 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
   private def onTransactionFail(smPath: Path, cause: String): Unit = {
     val tuple = checkOngoingAndTarget(smPath, meta.failDirName)
     hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
-
     // TODO create sm.error file
-    // TODO context.stop(transaction) (stop the transaction actor)
-
+    //context.stop(ongoingSm(smPath)._1)
     ongoingSm.remove(smPath)
     log.error(s"failed: $smPath, $cause")
   }
@@ -118,10 +132,8 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
   private def onTransactionSuccess(smPath: Path): Unit = {
     val tuple = checkOngoingAndTarget(smPath, meta.doneDirName)
     hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
-
-    // TODO get appender, put the serialized line to HDFSIO file
-    // TODO context.stop(transaction) (stop the transaction actor)
-
+    hdfsIO ! Append("sm", smAppendable.appender, ongoingSm(smPath)._2)
+    //context.stop(ongoingSm(smPath)._1)
     ongoingSm.remove(smPath)
     log.info(s"success: $smPath")
   }
@@ -160,7 +172,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
       hdfsIO ! MoveToSubDir(hdfsClient, smPath, meta.ongoingDirName)
   }
 
-  private def serializeSmartContract(smFileName: String, sm: SmartContract, hash: String): String = {
+  private def serializeSmartContract(smFileName: String, sm: SmartContract, hash: String): StringBuilder = {
     val newline = "\n"
     val smBuilder = new StringBuilder()
 
@@ -179,7 +191,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hivePool: ActorRef, ernesto: A
          |${sm.destinationOverwrite}"""
         .stripMargin.replaceAll(newline, meta.smDelimiter.toString)).append(newline)
 
-    smBuilder.mkString
+    smBuilder
   }
 
   private def hashSmartContract(array: Array[Byte]): String = {

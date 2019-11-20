@@ -12,4 +12,5 @@ final case class CoreMetadata(clientTimeout: Timeout,
                               smWatchDirs: Set[String],
                               smWatchTick: Timeout,
                               smSufix: String,
-                              smDelimiter: String)
+                              smDelimiter: String,
+                              smDestinyDir: String)

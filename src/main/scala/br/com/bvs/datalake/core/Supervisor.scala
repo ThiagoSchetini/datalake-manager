@@ -37,7 +37,7 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
     }
 
     ernesto = context.actorOf(Ernesto.props(hdfsClient), "ernesto")
-    smRanger = context.actorOf(SmartContractRanger.props(hdfsClient, hivePool, ernesto), "sm-ranger")
+    smRanger = context.actorOf(SmartContractRanger.props(hdfsClient, hdfsPool, hivePool, ernesto), "sm-ranger")
   }
 
   override def receive: Receive = {
