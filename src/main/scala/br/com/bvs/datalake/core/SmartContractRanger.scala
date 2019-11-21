@@ -4,13 +4,16 @@ import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 import akka.pattern.ask
+
 import scala.collection.mutable
 import org.apache.hadoop.fs.{FileSystem, Path}
 import java.io.ByteArrayInputStream
-import java.util.{Calendar, Properties}
+import java.util.{Date, Properties}
 import java.security.MessageDigest
 import java.math.BigInteger
+import java.sql.Timestamp
 import java.time.Instant
+
 import br.com.bvs.datalake.core.Ernesto.WatchSmartContractsOn
 import br.com.bvs.datalake.core.HdfsPool.{Appendable, GetAppendable}
 import br.com.bvs.datalake.core.SmartContractRanger.{TransactionFailed, TransactionSuccess}
@@ -178,7 +181,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
 
     smBuilder.append(
       s"""$hash
-         |${Calendar.getInstance.getTime}
+         |${new Timestamp(new Date().getTime)}
          |$smFileName
          |${sm.transaction}
          |${sm.sourceServer}
