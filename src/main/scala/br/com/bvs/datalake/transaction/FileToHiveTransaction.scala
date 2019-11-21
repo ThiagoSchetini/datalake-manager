@@ -91,7 +91,8 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSys
         pipeline,
         TextUtil.serializeList(sm.destinationTypes),
         sm.sourceTimeFormat,
-        TextUtil.serializeList(sm.destinationFields))
+        TextUtil.serializeList(sm.destinationFields),
+        sm.sourceHeader)
 
       cmd = SparkHelper.createSparkSubmit(submitMeta)
       val result = executeSparkSubmit(meta.search, cmd)

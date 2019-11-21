@@ -17,4 +17,5 @@ case class SubmitMetadata(submit: String,
                           pipeline: String,
                           types: String,
                           dateFormat: String,
-                          fields: String)
+                          fields: String,
+                          header: Boolean)
