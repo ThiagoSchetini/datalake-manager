@@ -1,7 +1,8 @@
 package br.com.bvs.datalake.io
 
 import java.io.{BufferedInputStream, BufferedReader, ByteArrayInputStream, File, FileInputStream, InputStreamReader}
-import akka.actor.{Actor, ActorLogging, Props, Status}
+import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.Status.Failure
 import org.apache.hadoop.fs._
 import HdfsIO._
 import br.com.bvs.datalake.helper.HadoopConfigurationHelper
@@ -39,7 +40,7 @@ class HdfsIO extends Actor with ActorLogging {
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    sender ! Status.Failure(reason)
+    sender ! Failure(reason)
   }
 
   override def receive: Receive = {
@@ -138,7 +139,7 @@ class HdfsIO extends Actor with ActorLogging {
         warning 2: when is file, it removes everything inside the directory,
         but when is directory, it removes the entire directory
 
-        warning 3: for the application, we consider removing always the directory
+        solution: always remove the directory
        */
       if (hdfsClient.exists(path)) {
         var directory = path

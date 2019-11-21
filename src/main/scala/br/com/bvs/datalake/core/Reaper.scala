@@ -19,15 +19,17 @@ class Reaper(implicit actorSystem: ActorSystem) extends Actor with ActorLogging 
 
     case Terminated(ref) =>
       watching -= ref
+      log.error(s"watched actor unexpected terminated: $ref")
+      onReap()
 
-      if (watching.isEmpty) {
-        log.info("all watched actors terminated")
-        actorSystem.terminate()
-      }
+    case Reap => onReap()
+  }
 
-    case Reap =>
-      log.warning("forcing actor system to finish")
-      actorSystem.terminate()
+  private def onReap(): Unit = {
+    log.warning("shutting down datalake manager actor system")
+    if (watching.nonEmpty)
+      watching.foreach(a => context.stop(a))
+    actorSystem.terminate()
   }
 
 }

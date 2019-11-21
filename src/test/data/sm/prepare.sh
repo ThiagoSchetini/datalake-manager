@@ -14,7 +14,7 @@ echo "[TEST] ${title} hive smart contract table"
 hive -e "drop table if exists testdb.smartcontract"
 
 hive -e \
-"create external table testdb.smartcontract (\
+"create external table if not exists testdb.smartcontract (\
 HASH STRING,\
 CREATION_TIME TIMESTAMP,\
 FILENAME STRING,\
@@ -29,5 +29,5 @@ DESTINATION_TYPES ARRAY<STRING>,\
 DESTINATION_OVERWRITE BOOLEAN) \
 row format delimited \
 fields terminated by '|' \
-collection items terminated by ','\
+collection items terminated by ',' \
 location '/smartcontract';"

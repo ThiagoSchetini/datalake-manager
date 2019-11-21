@@ -1,6 +1,7 @@
 package br.com.bvs.datalake.core
 
-import akka.actor.{Actor, ActorLogging, Props, Status}
+import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.Status.Failure
 import scala.collection.mutable
 import java.sql.{Connection, DriverManager}
 import br.com.bvs.datalake.core.HivePool.{DisposeConnection, GetHiveConnection}
@@ -20,7 +21,7 @@ class HivePool extends Actor with ActorLogging{
   private var connBusy: mutable.Set[Connection] = _
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    context.parent ! Status.Failure(reason)
+    context.parent ! Failure(reason)
   }
 
   override def preStart(): Unit = {
@@ -43,14 +44,13 @@ class HivePool extends Actor with ActorLogging{
       connBusy += conn
       sender ! conn
 
-      log.info(s"total pool available connections: ${connPool.size}")
-      log.info(s"total pool using connections: ${connBusy.size}")
+      log.info(s"available connections: ${connPool.size}")
+      log.info(s"using connections: ${connBusy.size}")
 
     case DisposeConnection(conn: Connection) =>
       connBusy -= conn
       connPool += conn
       log.info(s"hive connection $conn returned to pool")
-
   }
 
   override def postStop(): Unit = {

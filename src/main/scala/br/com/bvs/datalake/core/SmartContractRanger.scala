@@ -61,16 +61,18 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     val futureAppender = hdfsPool ? GetAppendable(meta.smDestinyDir)
     try {
       smAppendable = Await.result(futureAppender, meta.clientTimeout.duration).asInstanceOf[Appendable]
-      log.info("HDFS appender to smart contracts ok")
     } catch {
       case e: Exception =>
-        context.parent.forward(s"couldn't create HDFS appender to smart contracts: ${e.getMessage}")
+        context.parent ! Failure(new Exception(s"couldn't create HDFS appender to smart contracts: ${e.getMessage}"))
     }
   }
 
-  override def receive: Receive = {
-    case msg: Failure => context.parent.forward(msg)
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    // TODO remove this after the sm validation is complete
+    context.parent ! Failure(reason)
+  }
 
+  override def receive: Receive = {
     case PathsList(paths) => onErnestoGotSmartContracts(paths)
 
     case DataFromFile(smPath, smData) => onSmartContractDataReceived(smPath, smData)
@@ -78,6 +80,8 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     case TransactionSuccess(path) => onTransactionSuccess(path)
 
     case TransactionFailed(path, errorLog) => onTransactionFail(path, errorLog)
+
+    case Failure(e) => context.parent ! Failure(e)
   }
 
   private def createTransaction(transaction: String, path: Path, sm: SmartContract, hash: String): ActorRef = {

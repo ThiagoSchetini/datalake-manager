@@ -1,7 +1,7 @@
 package br.com.bvs.datalake.core
 
 import akka.actor.Status.Failure
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
 import scala.collection.mutable
 import br.com.bvs.datalake.core.HdfsPool._
@@ -24,7 +24,7 @@ class HdfsPool extends Actor with ActorLogging {
   private val appendablePool = mutable.HashMap[String, Appendable]()
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    context.parent ! Status.Failure(reason)
+    context.parent ! Failure(reason)
   }
 
   override def receive: Receive = {
@@ -55,8 +55,6 @@ class HdfsPool extends Actor with ActorLogging {
           appendablePool += s"$target" -> appendable
           sender ! appendable
       }
-
-    case Failure(reason) => sender ! Status.Failure(reason)
   }
 
   override def postStop(): Unit = {
@@ -65,7 +63,7 @@ class HdfsPool extends Actor with ActorLogging {
 
   private def stopClient(): Unit = {
     if (appendablePool.nonEmpty) {
-      log.info("stopping HDFS client appenders")
+      log.info("stopping HDFS client open appenders")
       appendablePool.foreach(a => a._2.appender.close())
     }
 

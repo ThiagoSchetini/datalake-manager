@@ -1,20 +1,21 @@
 package br.com.bvs.datalake.io
 
 import java.sql.Connection
-import akka.actor.{Actor, ActorLogging, Props, Status}
-import br.com.bvs.datalake.io.HiveIO.{CheckTable, DatabaseAndTableChecked}
+import akka.actor.Status.Failure
+import akka.actor.{Actor, ActorLogging, Props}
+import br.com.bvs.datalake.io.HiveIO.{CheckTable, TableChecked}
 
 object HiveIO {
   def props: Props = Props(new HiveIO)
 
   case class CheckTable(conn: Connection, database: String, table: String, location: String, fields: List[(String, String)])
-  case object DatabaseAndTableChecked
+  case object TableChecked
 }
 
 class HiveIO extends Actor with ActorLogging {
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    sender ! Status.Failure(reason)
+    sender ! Failure(reason)
   }
 
   override def receive: Receive = {
@@ -25,13 +26,14 @@ class HiveIO extends Actor with ActorLogging {
       val stmt = conn.createStatement()
       stmt.execute(databaseQuery)
       stmt.execute(tableQuery)
-      sender ! DatabaseAndTableChecked
+      sender ! TableChecked
   }
 
   private def buildQueryCreateTable(database: String, table: String, location: String, fields: List[(String, String)]): String = {
     val builder = new StringBuilder
-    builder
-      .append(s"create external table if not exists $database.$table (")
+
+    /* create part */
+    builder.append(s"create external table if not exists $database.$table (")
 
     /* fields part */
     val fieldz = fields.reverse.tail.reverse

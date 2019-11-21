@@ -6,17 +6,20 @@ import akka.util.Timeout
 import akka.pattern.ask
 import scala.concurrent.Await
 import org.apache.hadoop.fs.FileSystem
-import br.com.bvs.datalake.core.Reaper.Reap
+import br.com.bvs.datalake.core.Reaper.{Reap, WatchIt}
 import br.com.bvs.datalake.helper.PropertiesHelper
 import br.com.bvs.datalake.core.HdfsPool.GetHDFSClient
+import br.com.bvs.datalake.core.Supervisor.ShutDownManager
 
 object Supervisor {
   def props(reaper: ActorRef): Props = Props(new Supervisor(reaper))
+
+  case object ShutDownManager
 }
 
 class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
-  private var hdfsPool: ActorRef = _
   private var hdfsClient: FileSystem = _
+  private var hdfsPool: ActorRef = _
   private var hivePool: ActorRef = _
   private var smRanger: ActorRef = _
   private var ernesto: ActorRef = _
@@ -38,11 +41,21 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
 
     ernesto = context.actorOf(Ernesto.props(hdfsClient), "ernesto")
     smRanger = context.actorOf(SmartContractRanger.props(hdfsClient, hdfsPool, hivePool, ernesto), "sm-ranger")
+    enableTwoWayErrorProtection()
   }
 
   override def receive: Receive = {
     case Failure(e) =>
       log.error(e.getMessage)
       reaper ! Reap
+
+    case ShutDownManager => reaper ! Reap
+  }
+
+  private def enableTwoWayErrorProtection(): Unit = {
+    reaper ! WatchIt(hdfsPool)
+    reaper ! WatchIt(hivePool)
+    reaper ! WatchIt(ernesto)
+    reaper ! WatchIt(smRanger)
   }
 }
