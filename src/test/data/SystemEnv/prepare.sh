@@ -1,17 +1,13 @@
 #!/usr/bin/env bash
 
-smTitle="SmartContract:"
+echo "[TEST] SmartContract: hive smart contract table"
 
 #-- hdfs --#
-testHdfs=/smartcontract
+testHdfsSM=/smartcontract
 
-echo "[TEST] ${smTitle} hdfs destiny dir for all sm's"
-hdfs dfs -rm -R -skipTrash ${testHdfs} 2>/dev/null
-hdfs dfs -mkdir -p ${testHdfs}
-
-echo "[TEST] ${smTitle} hive smart contract table"
-
-#hive -e "drop table if exists testdb.smartcontract"
+hdfs dfs -rm -R -skipTrash ${testHdfsSM} 2>/dev/null
+hdfs dfs -mkdir -p ${testHdfsSM}
+hive -e "drop table if exists testdb.smartcontract"
 
 hive -e \
 "create external table if not exists testdb.smartcontract (\
@@ -32,4 +28,5 @@ fields terminated by '|' \
 collection items terminated by ',' \
 location '/smartcontract';"
 
+echo "[TEST] Shutdown Signal: prepare directory"
 mkdir target/shutdown-signal 2>/dev/null

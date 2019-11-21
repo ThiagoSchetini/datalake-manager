@@ -197,12 +197,21 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
          |${sm.destinationPath}
          |${sm.destinationDatabase}
          |${sm.destinationTable}
-         |${sm.destinationFields}
-         |${sm.destinationTypes}
+         |${serializeList(sm.destinationFields)}
+         |${serializeList(sm.destinationTypes)}
          |${sm.destinationOverwrite}"""
         .stripMargin.replaceAll(newline, meta.smDelimiter.toString)).append(newline)
 
     smBuilder
+  }
+
+  private def serializeList(list: List[String]): String = {
+    val builder = new StringBuilder()
+    val last = list.last
+    val noLast = list.reverse.tail.reverse
+    noLast.foreach(i => builder.append(s"$i,"))
+    builder.append(last)
+    builder.mkString
   }
 
   private def hashSmartContract(array: Array[Byte]): String = {
