@@ -35,30 +35,32 @@ object SmartContractRanger {
   case class TransactionFailed(smPath: Path, errorLog: String)
 }
 
-class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: ActorRef, ernesto: ActorRef) extends Actor with ActorLogging {
+class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: ActorRef, ernesto: ActorRef)
+  extends Actor with ActorLogging {
   private var ongoingSm: mutable.HashMap[Path, (ActorRef, StringBuilder)] = _
   private var meta: CoreMetadata = _
   private var hdfsIO: ActorRef = _
   private var smAppendable: Appendable = _
 
   override def preStart(): Unit = {
-    ongoingSm = new mutable.HashMap[Path, (ActorRef, StringBuilder)]()
     meta = PropertiesHelper.getCoreMetadata
-    hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
     implicit val clientTimeout: Timeout = meta.clientTimeout
+    ongoingSm = new mutable.HashMap[Path, (ActorRef, StringBuilder)]()
 
-    meta.smWatchDirs.foreach(dir => {
+    hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
+
+    meta.smWatchHdfsDirs.foreach(dir => {
       hdfsIO ! CheckOrCreateDir(hdfsClient, dir)
       hdfsIO ! CheckOrCreateDir(hdfsClient, s"$dir/${meta.failDirName}")
       hdfsIO ! CheckOrCreateDir(hdfsClient, s"$dir/${meta.ongoingDirName}")
       hdfsIO ! CheckOrCreateDir(hdfsClient, s"$dir/${meta.doneDirName}")
-      ernesto ! WatchSmartContractsOn(dir)
+      ernesto ! WatchSmartContractsOn(dir, meta.smWatchTick)
 
       /* only first runtime check on ongoing, in case of application break */
       hdfsIO ! ListFilesFrom(hdfsClient, s"$dir/${meta.ongoingDirName}")
     })
 
-    val futureAppender = hdfsPool ? GetAppendable(meta.smDestinyDir)
+    val futureAppender = hdfsPool ? GetAppendable(meta.smDestinyHdfsDir)
     try {
       smAppendable = Await.result(futureAppender, meta.clientTimeout.duration).asInstanceOf[Appendable]
     } catch {
@@ -73,7 +75,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
   }
 
   override def receive: Receive = {
-    case PathsList(paths) => onErnestoGotSmartContracts(paths)
+    case PathsList(paths) => onSmartContractsList(paths)
 
     case DataFromFile(smPath, smData) => onSmartContractDataReceived(smPath, smData)
 
@@ -93,7 +95,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     }
   }
 
-  private def onErnestoGotSmartContracts(paths: List[Path]): Unit = {
+  private def onSmartContractsList(paths: List[Path]): Unit = {
     if (paths.nonEmpty) {
       paths
         .filter(_.getName.contains(meta.smSufix))

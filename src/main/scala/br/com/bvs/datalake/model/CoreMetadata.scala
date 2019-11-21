@@ -9,8 +9,11 @@ final case class CoreMetadata(clientTimeout: Timeout,
                               failDirName: String,
                               ongoingDirName: String,
                               doneDirName: String,
-                              smWatchDirs: Set[String],
+                              smWatchHdfsDirs: Set[String],
                               smWatchTick: Timeout,
                               smSufix: String,
                               smDelimiter: String,
-                              smDestinyDir: String)
+                              smDestinyHdfsDir: String,
+                              shutdownSignalLocalDir: String,
+                              shutdownSignalFile: String,
+                              shutdownWatchTick: Timeout)

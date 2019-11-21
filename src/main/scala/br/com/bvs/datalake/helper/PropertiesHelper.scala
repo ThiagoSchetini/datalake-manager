@@ -40,11 +40,14 @@ object PropertiesHelper {
       props.getProperty("fail.dir.name"),
       props.getProperty("ongoing.dir.name"),
       props.getProperty("done.dir.name"),
-      props.getProperty("sm.watch.dirs").split(",").toSet,
+      props.getProperty("sm.watch.hdfs.dirs").split(",").toSet,
       Timeout(props.getProperty("sm.watch.seconds.tick").toInt seconds),
       props.getProperty("sm.sufix"),
       props.getProperty("sm.delimiter"),
-      props.getProperty("sm.destiny.dir")
+      props.getProperty("sm.destiny.hdfs.dir"),
+      props.getProperty("shutdown.signal.local.dir"),
+      props.getProperty("shutdown.signal.file"),
+      Timeout(props.getProperty("shutdown.watch.seconds.tick").toInt seconds)
     )
   }
 

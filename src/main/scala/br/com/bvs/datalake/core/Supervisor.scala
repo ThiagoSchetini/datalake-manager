@@ -4,12 +4,17 @@ import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 import akka.pattern.ask
+import br.com.bvs.datalake.core.Ernesto.WatchShutDownSignalOn
+
 import scala.concurrent.Await
 import org.apache.hadoop.fs.FileSystem
 import br.com.bvs.datalake.core.Reaper.{Reap, WatchIt}
 import br.com.bvs.datalake.helper.PropertiesHelper
 import br.com.bvs.datalake.core.HdfsPool.GetHDFSClient
 import br.com.bvs.datalake.core.Supervisor.ShutDownManager
+import br.com.bvs.datalake.io.LocalIO
+import br.com.bvs.datalake.io.LocalIO.{FileExists, NotifyIfFileExists, RemoveFile}
+import br.com.bvs.datalake.model.CoreMetadata
 
 object Supervisor {
   def props(reaper: ActorRef): Props = Props(new Supervisor(reaper))
@@ -23,6 +28,8 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
   private var hivePool: ActorRef = _
   private var smRanger: ActorRef = _
   private var ernesto: ActorRef = _
+  private var localIO: ActorRef = _
+  private var meta: CoreMetadata = _
 
   override def preStart(): Unit = {
     implicit val clientTimeout: Timeout = PropertiesHelper.getCoreMetadata.clientTimeout
@@ -41,7 +48,11 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
 
     ernesto = context.actorOf(Ernesto.props(hdfsClient), "ernesto")
     smRanger = context.actorOf(SmartContractRanger.props(hdfsClient, hdfsPool, hivePool, ernesto), "sm-ranger")
+    localIO = context.actorOf(LocalIO.props, "local-io")
+
+    meta = PropertiesHelper.getCoreMetadata
     enableTwoWayErrorProtection()
+    ernesto ! WatchShutDownSignalOn(s"${meta.shutdownSignalLocalDir}/${meta.shutdownSignalFile}", meta.smWatchTick)
   }
 
   override def receive: Receive = {
@@ -50,6 +61,12 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
       reaper ! Reap
 
     case ShutDownManager => reaper ! Reap
+
+    case FileExists(source) =>
+      if(source.contains(meta.shutdownSignalFile)) {
+        localIO ! RemoveFile(source)
+        reaper ! Reap
+      }
   }
 
   private def enableTwoWayErrorProtection(): Unit = {
