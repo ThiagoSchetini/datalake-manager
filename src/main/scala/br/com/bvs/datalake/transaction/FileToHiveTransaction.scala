@@ -66,7 +66,7 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSys
         /* TODO remove this if and production check: send ! YarnResourceCheck (tunning params, create policy for prod and dev)*/
         mem = 24
         cores = 12
-        executors = 3
+        executors = 2
         eMem = 16
         eCores = 12
         connections = 3
@@ -90,7 +90,8 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSys
         sm.destinationOverwrite,
         pipeline,
         TextUtil.serializeList(sm.destinationTypes),
-        sm.sourceTimeFormat)
+        sm.sourceTimeFormat,
+        TextUtil.serializeList(sm.destinationFields))
 
       cmd = SparkHelper.createSparkSubmit(submitMeta)
       val result = executeSparkSubmit(meta.search, cmd)

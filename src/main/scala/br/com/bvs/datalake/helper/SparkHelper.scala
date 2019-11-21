@@ -66,7 +66,8 @@ object SparkHelper {
         meta.overwrite.toString,
         meta.pipeline,
         meta.types,
-        meta.dateFormat
+        meta.dateFormat,
+        meta.fields
     )
   }
 }
