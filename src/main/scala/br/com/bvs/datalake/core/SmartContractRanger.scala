@@ -124,19 +124,21 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
   }
 
   private def onTransactionFail(smPath: Path, cause: String): Unit = {
-    val tuple = checkOngoingAndTarget(smPath, meta.failDirName)
+    val tuple = buildOngoingAndTargetPaths(smPath, meta.failDirName)
     hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
     // TODO create sm.error file
-    //context.stop(ongoingSm(smPath)._1)
-    ongoingSm.remove(smPath)
+    if(ongoingSm.contains(smPath)) {
+      context.stop(ongoingSm(smPath)._1)
+      ongoingSm.remove(smPath)
+    }
     log.error(s"failed: $smPath, $cause")
   }
 
   private def onTransactionSuccess(smPath: Path): Unit = {
-    val tuple = checkOngoingAndTarget(smPath, meta.doneDirName)
+    val tuple = buildOngoingAndTargetPaths(smPath, meta.doneDirName)
     hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
     hdfsIO ! Append("sm", smAppendable.appender, ongoingSm(smPath)._2)
-    //context.stop(ongoingSm(smPath)._1)
+    context.stop(ongoingSm(smPath)._1)
     ongoingSm.remove(smPath)
     log.info(s"success: $smPath")
   }
@@ -205,7 +207,8 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     bigInteger.toString(16)
   }
 
-  private def checkOngoingAndTarget(smPath: Path, target: String): (Path, Path) = {
+  private def buildOngoingAndTargetPaths(smPath: Path, target: String): (Path, Path) = {
+    /* we have to consider if the sm already comes from ongoing */
     var ongoingPath = smPath
     if (!isOngoing(smPath))
       ongoingPath = new Path(s"${smPath.getParent}/${meta.ongoingDirName}/${smPath.getName}")
