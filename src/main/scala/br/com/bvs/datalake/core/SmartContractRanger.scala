@@ -131,12 +131,16 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
 
   private def onTransactionFail(smPath: Path, cause: String): Unit = {
     val tuple = buildOngoingAndTargetPaths(smPath, meta.failDirName)
+    val errorPath = buildErrorFilePath(smPath, meta.failDirName)
+
     hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
-    // TODO create sm.error file
+    hdfsIO ! OverwriteFileWithData(hdfsClient, errorPath, cause)
+
     if(ongoingSm.contains(smPath)) {
       context.stop(ongoingSm(smPath)._1)
       ongoingSm.remove(smPath)
     }
+
     log.error(s"failed: $smPath, $cause")
   }
 
@@ -230,5 +234,11 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
 
     val targetPath = new Path(s"${ongoingPath.getParent.getParent}/$target/${ongoingPath.getName}")
     (ongoingPath, targetPath)
+  }
+
+  private def buildErrorFilePath(smPath: Path, errorDir: String): Path = {
+    val name = smPath.getName.replace(s".${meta.smSufix}", "")
+    val errorName = s"$name.error"
+    new Path(s"${smPath.getParent}/$errorDir/$errorName")
   }
 }

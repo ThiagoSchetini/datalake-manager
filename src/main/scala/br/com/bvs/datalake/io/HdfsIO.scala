@@ -20,6 +20,8 @@ object HdfsIO {
   case class FileDoesNotExist(source: String)
   case class DataFromFile(path: Path, data: String)
 
+  case class OverwriteFileWithData(hdfsClient: FileSystem, targetPath: Path, data: String)
+
   case class ListFilesFrom(hdfsClient: FileSystem, source: String)
   case class DirectoryDoesNotExist(source: String)
   case class PathsList(paths: List[Path])
@@ -62,7 +64,7 @@ class HdfsIO extends Actor with ActorLogging {
       sender ! FileUploaded
 
     case Append(target, appender, data) =>
-      val inStream = new ByteArrayInputStream(data.toString().getBytes())
+      val inStream = new ByteArrayInputStream(data.toString.getBytes())
       val inBuffer = new BufferedInputStream(inStream)
       val bytes = new Array[Byte](bufferSize)
 
@@ -78,7 +80,7 @@ class HdfsIO extends Actor with ActorLogging {
       /* warning: do not close the appender, it's done by pool */
 
     case ReadFile(hdfsClient, path) =>
-      if (!hdfsClient.exists(path) || !hdfsClient.isFile(path)) {
+      if (!hdfsClient.exists(path)) {
         sender ! FileDoesNotExist(path.toString)
 
       } else {
@@ -96,6 +98,20 @@ class HdfsIO extends Actor with ActorLogging {
         inStream.close()
         sender ! DataFromFile(path, data.mkString)
       }
+
+    case OverwriteFileWithData(hdfsClient, targetPath, data) =>
+      val inBuffer = new ByteArrayInputStream(data.toString.getBytes())
+      val outBuffer = hdfsClient.create(targetPath, true)
+      val bytes = new Array[Byte](bufferSize)
+
+      var numBytes = inBuffer.read(bytes)
+      while (numBytes > 0) {
+        outBuffer.write(bytes, 0, numBytes)
+        numBytes = inBuffer.read(bytes)
+      }
+
+      inBuffer.close()
+      outBuffer.close()
 
     case ListFilesFrom(hdfsClient, source) =>
       val path = new Path(source)

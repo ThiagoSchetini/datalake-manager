@@ -42,17 +42,9 @@ Them:
 
 `sh start-manager.sh`
 
-### Tuning JVM for production:
-Use this flags on JVM as example to optimize young generation memory and make it elastic to OS:
+To Shut Down:
 
-    -XX:+UseG1GC 
-    -Xms8G
-    -Xmx24G 
-    -XX:NewRatio=1 
-    -XX:SurvivorRatio=128 
-    -XX:MinHeapFreeRatio=5 
-    -XX:MaxHeapFreeRatio=5 
-
+`touch target/shutdown-signal/shutdown.signal`
 
 ### how to debug on InteliJ:
 Considering your cloned on "~/repository/datalake" Open "Run/Debug Configurations":
