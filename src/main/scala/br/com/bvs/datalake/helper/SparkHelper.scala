@@ -68,7 +68,8 @@ object SparkHelper {
         meta.types,
         meta.dateFormat,
         meta.fields,
-        meta.header.toString
+        meta.header.toString,
+        meta.delimiter
     )
   }
 }

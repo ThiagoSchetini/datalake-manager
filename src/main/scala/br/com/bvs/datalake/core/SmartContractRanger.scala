@@ -118,7 +118,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
 
     } else {
       moveSmartContractToOngoing(smPath)
-      val hash = hashSmartContract(smData.getBytes())
+      val hash = buildHash(smData.getBytes())
       val transaction = createTransaction(sm.transaction, smPath, sm, hash)
 
       if (transaction == null) {
@@ -161,8 +161,6 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
       props.getProperty("source.header").toBoolean,
       props.getProperty("source.delimiter"),
       props.getProperty("source.remove").toBoolean,
-      props.getProperty("source.true.format"),
-      props.getProperty("source.false.format"),
       props.getProperty("source.time.format"),
       props.getProperty("destination.fields").split(",").toList,
       props.getProperty("destination.types").split(",").toList,
@@ -205,12 +203,12 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
          |${TextUtil.serializeList(sm.destinationFields)}
          |${TextUtil.serializeList(sm.destinationTypes)}
          |${sm.destinationOverwrite}"""
-        .stripMargin.replaceAll(newline, meta.smDelimiter.toString)).append(newline)
+        .stripMargin.replaceAll(newline, "|")).append(newline)
 
     smBuilder
   }
 
-  private def hashSmartContract(array: Array[Byte]): String = {
+  private def buildHash(array: Array[Byte]): String = {
     val bytesTime = Instant.now.toString.getBytes
     val sum = array ++ bytesTime
     val digest = MessageDigest.getInstance("MD5").digest(sum)

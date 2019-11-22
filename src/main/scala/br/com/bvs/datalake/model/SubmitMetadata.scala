@@ -18,4 +18,5 @@ case class SubmitMetadata(submit: String,
                           types: String,
                           dateFormat: String,
                           fields: String,
-                          header: Boolean)
+                          header: Boolean,
+                          delimiter: String)
