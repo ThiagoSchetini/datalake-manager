@@ -18,6 +18,7 @@ import br.com.bvs.datalake.io.{HdfsIO, HiveIO}
 import br.com.bvs.datalake.io.HiveIO.{CheckTable, TableChecked}
 import br.com.bvs.datalake.model.{SmartContract, SubmitMetadata}
 import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
+import br.com.bvs.datalake.util.TextUtil
 
 object FileToHiveTransaction {
   def props(path: Path, sm: SmartContract, hdfsClient: FileSystem, hivePool: ActorRef, timeout: Timeout):Props =
@@ -87,7 +88,9 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSys
         sm.sourcePath,
         sm.destinationPath,
         sm.destinationOverwrite,
-        pipeline)
+        pipeline,
+        TextUtil.serializeList(sm.destinationTypes),
+        sm.sourceTimeFormat)
 
       cmd = SparkHelper.createSparkSubmit(submitMeta)
       val result = executeSparkSubmit(meta.search, cmd)

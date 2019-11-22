@@ -14,4 +14,6 @@ case class SubmitMetadata(submit: String,
                           source: String,
                           destiny: String,
                           overwrite: Boolean,
-                          pipeline: String)
+                          pipeline: String,
+                          types: String,
+                          dateFormat: String)

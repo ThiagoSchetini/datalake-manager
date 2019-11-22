@@ -25,4 +25,13 @@ object TextUtil {
     text.replaceAll(alphaAccentedRegex, "")
   }
 
+  def serializeList(list: List[String]): String = {
+    val builder = new StringBuilder()
+    val last = list.last
+    val noLast = list.reverse.tail.reverse
+    noLast.foreach(i => builder.append(s"$i,"))
+    builder.append(last)
+    builder.mkString
+  }
+
 }

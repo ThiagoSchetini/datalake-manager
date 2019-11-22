@@ -23,6 +23,7 @@ import br.com.bvs.datalake.io.HdfsIO._
 import br.com.bvs.datalake.model.{CoreMetadata, SmartContract}
 import br.com.bvs.datalake.transaction.FileToHiveTransaction
 import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
+import br.com.bvs.datalake.util.TextUtil
 
 import scala.concurrent.Await
 
@@ -201,21 +202,12 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
          |${sm.destinationPath}
          |${sm.destinationDatabase}
          |${sm.destinationTable}
-         |${serializeList(sm.destinationFields)}
-         |${serializeList(sm.destinationTypes)}
+         |${TextUtil.serializeList(sm.destinationFields)}
+         |${TextUtil.serializeList(sm.destinationTypes)}
          |${sm.destinationOverwrite}"""
         .stripMargin.replaceAll(newline, meta.smDelimiter.toString)).append(newline)
 
     smBuilder
-  }
-
-  private def serializeList(list: List[String]): String = {
-    val builder = new StringBuilder()
-    val last = list.last
-    val noLast = list.reverse.tail.reverse
-    noLast.foreach(i => builder.append(s"$i,"))
-    builder.append(last)
-    builder.mkString
   }
 
   private def hashSmartContract(array: Array[Byte]): String = {
