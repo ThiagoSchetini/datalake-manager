@@ -21,7 +21,7 @@ destiny=${testHdfs}/destiny
 #-- sanitize hdfs and hive --#
 hdfs dfs -rm -R -skipTrash ${destiny} 2>/dev/null
 hdfs dfs -mkdir -p ${destiny}
-hive -e "drop table if exists types;"
+hive -e "drop table if exists testdb.types;"
 
 echo "[TEST] ${title} transact a single csv file"
 hdfs dfs -rm -R -skipTrash ${sourceCSV} 2>/dev/null
