@@ -14,7 +14,7 @@ smDir=${test}/sm-dir.properties
 testHdfs=/br/com/bvs/datalake/transaction/FileToHiveTransaction
 watchCSV=${testHdfs}/watchCSV
 watchDir=${testHdfs}/watchDir
-sourceCSV=${testHdfs}/sourceCSV/file1.csv
+sourceCSV=${testHdfs}/sourceCSV
 sourceDir=${testHdfs}/sourceDir
 destiny=${testHdfs}/destiny
 
