@@ -29,4 +29,5 @@ collection items terminated by ',' \
 location '/smartcontract';"
 
 echo "[TEST] Shutdown Signal: prepare directory"
-mkdir target/shutdown-signal 2>/dev/null
+mkdir target/signals 2>/dev/null
+touch target/signals/package.signal
