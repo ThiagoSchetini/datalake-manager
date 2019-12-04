@@ -32,8 +32,8 @@ object SmartContractRanger {
     Props(new SmartContractRanger(hdfsClient, hdfsPool, hivePool, ernesto))
 
   case class ReadSmartContract(directory: String, filename: String)
-  case class TransactionSuccess(smPath: Path)
-  case class TransactionFailed(smPath: Path, errorLog: String)
+  case class TransactionSuccess(ongoingPath: Path)
+  case class TransactionFailed(ongoingPath: Path, errorLog: String)
 }
 
 class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: ActorRef, ernesto: ActorRef)
@@ -71,7 +71,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    // TODO remove this after the sm validation is complete
+    // TODO remove this after the sm validation is complete: this actor can't broke!
     context.parent ! Failure(reason)
   }
 
@@ -85,15 +85,6 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     case TransactionFailed(path, errorLog) => onTransactionFail(path, errorLog)
 
     case Failure(e) => context.parent ! Failure(e)
-  }
-
-  private def createTransaction(transaction: String, path: Path, sm: SmartContract, hash: String): ActorRef = {
-    transaction match {
-      case "FileToHiveTransaction" =>
-        context.actorOf(FileToHiveTransaction.props(path, sm, this.hdfsClient, this.hivePool, meta.clientTimeout), s"transaction-$hash")
-
-      case _ => null
-    }
   }
 
   private def onSmartContractsList(paths: List[Path]): Unit = {
@@ -117,41 +108,56 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
       onTransactionFail(smPath, "sm not valid")
 
     } else {
-      moveSmartContractToOngoing(smPath)
+      val ongoingSmPath = isOngoingPath(smPath) match {
+        case true => smPath
+        case false => buildOngoingPath(smPath)
+      }
+
+      hdfsIO ! MoveTo(hdfsClient, smPath, ongoingSmPath)
+
       val hash = buildHash(smData.getBytes())
-      val transaction = createTransaction(sm.transaction, smPath, sm, hash)
+      val transaction = createTransaction(sm.transaction, ongoingSmPath, sm, hash)
 
       if (transaction == null) {
-        onTransactionFail(smPath, s"transaction ${sm.transaction} is not valid")
+        onTransactionFail(ongoingSmPath, s"transaction ${sm.transaction} is not valid")
       } else {
-        ongoingSm += smPath -> (transaction, serializeSmartContract(smPath.getName, sm, hash))
+        ongoingSm += ongoingSmPath -> (transaction, serializeSmartContract(ongoingSmPath.getName, sm, hash))
         transaction ! Start
       }
     }
   }
 
-  private def onTransactionFail(smPath: Path, cause: String): Unit = {
-    val tuple = buildOngoingAndTargetPaths(smPath, meta.failDirName)
-    val errorPath = buildErrorFilePath(smPath, meta.failDirName)
+  private def onTransactionFail(ongoingPath: Path, cause: String): Unit = {
+    val errorPath = buildTargetPath(ongoingPath, meta.failDirName)
+    val errorFilePath = buildErrorFilePath(ongoingPath, errorPath)
 
-    hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
-    hdfsIO ! OverwriteFileWithData(hdfsClient, errorPath, cause)
+    hdfsIO ! MoveTo(hdfsClient, ongoingPath, errorPath)
+    hdfsIO ! OverwriteFileWithData(hdfsClient, errorFilePath, cause)
 
-    if(ongoingSm.contains(smPath)) {
-      context.stop(ongoingSm(smPath)._1)
-      ongoingSm.remove(smPath)
+    if(ongoingSm.contains(ongoingPath)) {
+      context.stop(ongoingSm(ongoingPath)._1)
+      ongoingSm.remove(ongoingPath)
     }
 
-    log.error(s"failed: $smPath, $cause")
+    log.error(s"failed: $ongoingPath, $cause")
   }
 
-  private def onTransactionSuccess(smPath: Path): Unit = {
-    val tuple = buildOngoingAndTargetPaths(smPath, meta.doneDirName)
-    hdfsIO ! MoveTo(hdfsClient, tuple._1, tuple._2)
-    hdfsIO ! Append("sm", smAppendable.appender, ongoingSm(smPath)._2)
-    context.stop(ongoingSm(smPath)._1)
-    ongoingSm.remove(smPath)
-    log.info(s"success: $smPath")
+  private def onTransactionSuccess(ongoingPath: Path): Unit = {
+    val donePath = buildTargetPath(ongoingPath, meta.doneDirName)
+    hdfsIO ! MoveTo(hdfsClient, ongoingPath, donePath)
+    hdfsIO ! Append("sm", smAppendable.appender, ongoingSm(ongoingPath)._2)
+    context.stop(ongoingSm(ongoingPath)._1)
+    ongoingSm.remove(ongoingPath)
+    log.info(s"success: $ongoingPath")
+  }
+
+  private def createTransaction(transaction: String, path: Path, sm: SmartContract, hash: String): ActorRef = {
+    transaction match {
+      case "FileToHiveTransaction" =>
+        context.actorOf(FileToHiveTransaction.props(path, sm, this.hdfsClient, this.hivePool, meta.clientTimeout), s"transaction-$hash")
+
+      case _ => null
+    }
   }
 
   private def buildSmartContract(props: Properties): SmartContract = {
@@ -175,15 +181,6 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
   private def validateSmartContract(sm: SmartContract): Boolean = {
     // TODO create validations
     true
-  }
-
-  private def isOngoing(smPath: Path): Boolean = {
-    smPath.getParent.getName == meta.ongoingDirName
-  }
-
-  private def moveSmartContractToOngoing(smPath: Path): Unit = {
-    if(!isOngoing(smPath))
-      hdfsIO ! MoveToSubDir(hdfsClient, smPath, meta.ongoingDirName)
   }
 
   private def serializeSmartContract(smFileName: String, sm: SmartContract, hash: String): StringBuilder = {
@@ -216,19 +213,21 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     bigInteger.toString(16)
   }
 
-  private def buildOngoingAndTargetPaths(smPath: Path, target: String): (Path, Path) = {
-    /* we have to consider if the sm already comes from ongoing */
-    var ongoingPath = smPath
-    if (!isOngoing(smPath))
-      ongoingPath = new Path(s"${smPath.getParent}/${meta.ongoingDirName}/${smPath.getName}")
-
-    val targetPath = new Path(s"${ongoingPath.getParent.getParent}/$target/${ongoingPath.getName}")
-    (ongoingPath, targetPath)
+  private def isOngoingPath(smPath: Path): Boolean = {
+    smPath.getParent.getName == meta.ongoingDirName
   }
 
-  private def buildErrorFilePath(smPath: Path, errorDir: String): Path = {
-    val name = smPath.getName.replace(s".${meta.smSufix}", "")
+  private def buildOngoingPath(smPath: Path): Path = {
+    new Path(s"${smPath.getParent}/${meta.ongoingDirName}/${smPath.getName}")
+  }
+
+  private def buildTargetPath(ongoingPath: Path, target: String): Path = {
+    new Path(s"${ongoingPath.getParent.getParent}/$target")
+  }
+
+  private def buildErrorFilePath(ongoingPath: Path, errorPath: Path): Path = {
+    val name = ongoingPath.getName.replace(s".${meta.smSufix}", "")
     val errorName = s"$name.error"
-    new Path(s"${smPath.getParent}/$errorDir/$errorName")
+    new Path(s"$errorPath/$errorName")
   }
 }
