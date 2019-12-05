@@ -2,38 +2,38 @@ package br.com.bvs.datalake.helper
 
 import br.com.bvs.datalake.model.SubmitMetadata
 
-object SparkHelper {
+object SparkSubmitHelper {
   private val multiply = 1024
   private val factor = 4
+  private val master = "yarn"
 
-  /* basic */
+  /* basic flags */
   private val conf = "--conf"
   private val masterFlag = "--master"
-  private val master = "yarn"
   private val modeFlag = "--deploy-mode"
   private val queueFlag = "--queue"
 
-  /* driver */
+  /* driver flags */
   private val memFlag = "--driver-memory"
   private val coresFlag = "--driver-cores"
 
-  /* executors */
+  /* executors flags */
   private val executorsFlag = "--num-executors"
   private val eMemFlag = "--executor-memory"
   private val eCoresFlag = "--executor-cores"
 
-  /* over memory (auto) */
+  /* over memory flags */
   private val offHeapEnabled = "spark.memory.offHeap.enabled"
   private val offHeapSize = "spark.memory.offHeap.size"
   private val memOverhead = "spark.yarn.driver.memoryOverhead"
   private val eMemOverhead = "spark.yarn.executor.memoryOverhead"
 
-  /* tunning */
+  /* tunning flags + params */
   private val resultsFromExecutorsToNoLimits = "spark.driver.maxResultSize=0"
-  private val jvmYoungGenTuning = "spark.executor.extraJavaOptions=-XX:+UseG1GC -XX:NewRatio=1 -XX:SurvivorRatio=128 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=5"
+  private val jvmYoungGenTuning = "spark.executor.extraJavaOptions=\"-XX:+UseG1GC -XX:NewRatio=1 -XX:SurvivorRatio=128 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=5\""
   private val useKryoSerializer = "spark.serializer=org.apache.spark.serializer.KryoSerializer"
 
-  /* network stability tolerance + throughput (numConnectionsPerPeer) */
+  /* network stability tolerance + throughput (numConnectionsPerPeer) flags */
   private val shuffleParallelConn = "spark.shuffle.io.numConnectionsPerPeer"
   private val yarnMaxRetries = "spark.yarn.maxAppAttempts"
   private val shuffleMaxRetries = "spark.shuffle.io.maxRetries"
@@ -61,15 +61,15 @@ object SparkHelper {
         conf,           s"$yarnMaxRetries=${meta.retries}",
         conf,           s"$shuffleMaxRetries=${meta.retries}",
         meta.jar,
-        meta.source,
-        meta.destiny,
-        meta.overwrite.toString,
-        meta.pipeline,
-        meta.types,
-        meta.dateFormat,
-        meta.fields,
-        meta.header.toString,
-        meta.delimiter
+        s"${meta.source}",
+        s"${meta.destiny}",
+        s"${meta.overwrite.toString}",
+        s"${meta.pipeline}",
+        s"${meta.types}",
+        s"${meta.dateFormat}",
+        s"${meta.fields}",
+        s"${meta.header.toString}",
+        s"${meta.delimiter}"
     )
   }
 }

@@ -108,21 +108,23 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
       onTransactionFail(smPath, "sm not valid")
 
     } else {
-      val ongoingSmPath = isOngoingPath(smPath) match {
-        case true => smPath
-        case false => buildOngoingPath(smPath)
-      }
+      val ongoingSmPath = buildOngoingPath(smPath)
 
-      hdfsIO ! MoveTo(hdfsClient, smPath, ongoingSmPath)
+      if (ongoingSm.contains(ongoingSmPath)) {
+        log.warning(s"already processing $ongoingSmPath")
 
-      val hash = buildHash(smData.getBytes())
-      val transaction = createTransaction(sm.transaction, ongoingSmPath, sm, hash)
-
-      if (transaction == null) {
-        onTransactionFail(ongoingSmPath, s"transaction ${sm.transaction} is not valid")
       } else {
-        ongoingSm += ongoingSmPath -> (transaction, serializeSmartContract(ongoingSmPath.getName, sm, hash))
-        transaction ! Start
+        hdfsIO ! MoveTo(hdfsClient, smPath, ongoingSmPath)
+
+        val hash = buildHash(smData.getBytes())
+        val transaction = createTransaction(sm.transaction, ongoingSmPath, sm, hash)
+
+        if (transaction == null) {
+          onTransactionFail(ongoingSmPath, s"transaction ${sm.transaction} is not valid")
+        } else {
+          ongoingSm += ongoingSmPath -> (transaction, serializeSmartContract(ongoingSmPath.getName, sm, hash))
+          transaction ! Start
+        }
       }
     }
   }
@@ -213,12 +215,11 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     bigInteger.toString(16)
   }
 
-  private def isOngoingPath(smPath: Path): Boolean = {
-    smPath.getParent.getName == meta.ongoingDirName
-  }
-
-  private def buildOngoingPath(smPath: Path): Path = {
-    new Path(s"${smPath.getParent}/${meta.ongoingDirName}/${smPath.getName}")
+  private def buildOngoingPath(smPath: Path) = {
+    smPath.getParent.getName == meta.ongoingDirName match {
+      case true => smPath
+      case false => new Path(s"${smPath.getParent}/${meta.ongoingDirName}/${smPath.getName}")
+    }
   }
 
   private def buildTargetPath(ongoingPath: Path, target: String): Path = {

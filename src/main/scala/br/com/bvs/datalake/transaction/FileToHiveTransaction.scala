@@ -95,7 +95,7 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSys
         sm.sourceHeader,
         sm.sourceDelimiter)
 
-      cmd = SparkHelper.createSparkSubmit(submitMeta)
+      cmd = SparkSubmitHelper.createSparkSubmit(submitMeta)
       val result = executeSparkSubmit(meta.search, cmd)
 
       if (result._1 == 0) {
@@ -112,7 +112,7 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSys
 
   private def executeSparkSubmit(search: String, cmd: Seq[String]): (Int, StringBuilder) = {
     val builder = new StringBuilder()
-
+    log.info(s"spark-submit: $cmd")
     val result = cmd ! ProcessLogger(log => {
       if(log.contains(search))
         builder.append(s"$log\n")
