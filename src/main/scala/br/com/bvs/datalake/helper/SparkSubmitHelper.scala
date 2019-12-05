@@ -61,15 +61,15 @@ object SparkSubmitHelper {
         conf,           s"$yarnMaxRetries=${meta.retries}",
         conf,           s"$shuffleMaxRetries=${meta.retries}",
         meta.jar,
-        s"${meta.source}",
-        s"${meta.destiny}",
-        s"${meta.overwrite.toString}",
-        s"${meta.pipeline}",
-        s"${meta.types}",
-        s"${meta.dateFormat}",
-        s"${meta.fields}",
-        s"${meta.header.toString}",
-        s"${meta.delimiter}"
+        meta.source,
+        meta.destiny,
+        meta.overwrite.toString,
+        meta.pipeline,
+        meta.types,
+        meta.dateFormat,
+        meta.fields,
+        meta.header.toString,
+        meta.delimiter
     )
   }
 }
