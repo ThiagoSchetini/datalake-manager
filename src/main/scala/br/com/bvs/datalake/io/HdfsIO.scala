@@ -31,6 +31,8 @@ object HdfsIO {
   case class MoveTo(hdfsClient: FileSystem, sourcePath: Path, targetPath: Path)
 
   case class RemoveDirectory(hdfsClient: FileSystem, path: Path)
+
+  case class RemoveFile(hdfsClient: FileSystem, path: Path)
 }
 
 class HdfsIO extends Actor with ActorLogging {
@@ -133,6 +135,9 @@ class HdfsIO extends Actor with ActorLogging {
       log.info(s"$dir checked: $result")
 
     case MoveTo(hdfsClient, sourcePath, targetPath) =>
+      if(hdfsClient.exists(targetPath))
+        hdfsClient.delete(targetPath, false)
+
       val result = hdfsClient.rename(sourcePath, targetPath)
 
       if (result)
@@ -158,6 +163,9 @@ class HdfsIO extends Actor with ActorLogging {
         if (result)
           log.info(s"removed directory $directory ")
       }
+
+    case RemoveFile(hdfsClient, path) =>
+      hdfsClient.delete(path, false)
   }
 
   private def isFile(path: Path): Boolean = {

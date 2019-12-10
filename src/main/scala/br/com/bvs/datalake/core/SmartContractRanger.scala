@@ -112,6 +112,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
 
       if (ongoingSm.contains(ongoingSmPath)) {
         log.warning(s"already processing $ongoingSmPath")
+        hdfsIO ! RemoveFile(hdfsClient, smPath)
 
       } else {
         hdfsIO ! MoveTo(hdfsClient, smPath, ongoingSmPath)
@@ -130,10 +131,10 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
   }
 
   private def onTransactionFail(ongoingPath: Path, cause: String): Unit = {
-    val errorPath = buildTargetPath(ongoingPath, meta.failDirName)
-    val errorFilePath = buildErrorFilePath(ongoingPath, errorPath)
+    val failPath = buildFailPath(ongoingPath)
+    val errorFilePath = buildErrorFilePath(ongoingPath)
 
-    hdfsIO ! MoveTo(hdfsClient, ongoingPath, errorPath)
+    hdfsIO ! MoveTo(hdfsClient, ongoingPath, failPath)
     hdfsIO ! OverwriteFileWithData(hdfsClient, errorFilePath, cause)
 
     if(ongoingSm.contains(ongoingPath)) {
@@ -145,7 +146,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
   }
 
   private def onTransactionSuccess(ongoingPath: Path): Unit = {
-    val donePath = buildTargetPath(ongoingPath, meta.doneDirName)
+    val donePath = buildDonePath(ongoingPath)
     hdfsIO ! MoveTo(hdfsClient, ongoingPath, donePath)
     hdfsIO ! Append("sm", smAppendable.appender, ongoingSm(ongoingPath)._2)
     context.stop(ongoingSm(ongoingPath)._1)
@@ -222,13 +223,17 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     }
   }
 
-  private def buildTargetPath(ongoingPath: Path, target: String): Path = {
-    new Path(s"${ongoingPath.getParent.getParent}/$target")
+  private def buildDonePath(ongoingPath: Path): Path = {
+    new Path(s"${ongoingPath.getParent.getParent}/${meta.doneDirName}/${ongoingPath.getName}")
   }
 
-  private def buildErrorFilePath(ongoingPath: Path, errorPath: Path): Path = {
+  private def buildFailPath(ongoingPath: Path): Path = {
+    new Path(s"${ongoingPath.getParent.getParent}/${meta.failDirName}/${ongoingPath.getName}")
+  }
+
+  private def buildErrorFilePath(ongoingPath: Path): Path = {
     val name = ongoingPath.getName.replace(s".${meta.smSufix}", "")
     val errorName = s"$name.error"
-    new Path(s"$errorPath/$errorName")
+    new Path(s"${ongoingPath.getParent.getParent}/${meta.failDirName}/$errorName")
   }
 }
