@@ -5,6 +5,15 @@ Warning: Clone on ~/repository/datalake
 
 "SM"/"sm" signum = Smart Contract
 
+### TODO 
+
+    + timestamp on spark-manager
+    + sm validation
+    + user name on sm
+    + PT-BR types
+    + Fields will be optional (choose)
+    + cobol/positional in
+
 ### requirements
 Up and running environment:
 
