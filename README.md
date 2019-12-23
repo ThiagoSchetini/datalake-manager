@@ -13,6 +13,7 @@ Warning: Clone on ~/repository/datalake
     + PT-BR types
     + Fields will be optional (choose)
     + cobol/positional in
+    + tunning on YARN
 
 ### requirements
 Up and running environment:
