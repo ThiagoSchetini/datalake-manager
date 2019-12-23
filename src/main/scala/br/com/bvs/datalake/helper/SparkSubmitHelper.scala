@@ -67,8 +67,8 @@ object SparkSubmitHelper {
         meta.pipeline,
         meta.types,
         meta.dateFormat,
-        meta.fields,
         meta.header.toString,
+        meta.fields,
         meta.delimiter
     )
   }
