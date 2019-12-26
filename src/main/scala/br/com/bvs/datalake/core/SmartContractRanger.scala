@@ -177,7 +177,9 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
       props.getProperty("destination.database"),
       props.getProperty("destination.table"),
       props.getProperty("destination.overwrite").toBoolean,
-      props.getProperty("transaction")
+      props.getProperty("transaction"),
+      props.getProperty("requester"),
+      props.getProperty("authorizing")
     )
   }
 
@@ -193,6 +195,8 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     smBuilder.append(
       s"""$hash
          |${new Timestamp(new Date().getTime)}
+         |${sm.requester}
+         |${sm.authorizing}
          |$smFileName
          |${sm.transaction}
          |${sm.sourceServer}

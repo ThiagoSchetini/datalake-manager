@@ -12,4 +12,6 @@ case class SmartContract(sourceServer: String,
                          destinationDatabase: String,
                          destinationTable: String,
                          destinationOverwrite: Boolean,
-                         transaction: String)
+                         transaction: String,
+                         requester: String,
+                         authorizing: String)

@@ -13,6 +13,8 @@ hive -e \
 "create external table if not exists testdb.smartcontract (\
 HASH STRING,\
 CREATION_TIME TIMESTAMP,\
+REQUESTER STRING,\
+AUTHORIZING STRING,\
 FILENAME STRING,\
 TRANSACTION STRING,\
 SRC_SERVER STRING,\

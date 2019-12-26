@@ -7,10 +7,16 @@ Warning: Clone on ~/repository/datalake
 
 ### TODO 
 
-    + timestamp on spark-manager
-    + sm validation
-    + user name on sm
+For the first deploy:
+    
+    + requester on sm
+    + authorizing on sm
     + PT-BR types
+    + PT-BR transactions
+    + sm validation
+    
+For future versions:
+
     + Fields will be optional (choose)
     + cobol/positional in
     + tunning on YARN
