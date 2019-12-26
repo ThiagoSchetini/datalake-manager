@@ -9,8 +9,6 @@ Warning: Clone on ~/repository/datalake
 
 For the first deploy:
     
-    + requester on sm
-    + authorizing on sm
     + PT-BR types
     + PT-BR transactions
     + sm validation
