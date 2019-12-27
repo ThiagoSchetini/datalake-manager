@@ -13,11 +13,20 @@ For the first deploy:
     + PT-BR transactions
     + sm validation
     
+For user (hard) tests:
+
+    + sm with no or empty required fields
+    + sm with wrong types
+    
 For future versions:
 
     + Fields will be optional (choose)
     + cobol/positional in
     + tunning on YARN
+    
+Auto tests implementations:
+
+    + coverage with tests
 
 ### requirements
 Up and running environment:
