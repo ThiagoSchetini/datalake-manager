@@ -20,9 +20,10 @@ For user (hard) tests:
     
 For future versions:
 
+    + type of smart contract (different sm classes will be created)
+    + tunning on YARN
     + Fields will be optional (choose)
     + cobol/positional in
-    + tunning on YARN
     
 Auto tests implementations:
 

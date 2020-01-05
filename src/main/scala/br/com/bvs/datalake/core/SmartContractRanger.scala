@@ -4,28 +4,19 @@ import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 import akka.pattern.ask
-
 import scala.collection.mutable
+import scala.concurrent.Await
 import org.apache.hadoop.fs.{FileSystem, Path}
-import java.io.ByteArrayInputStream
-import java.util.{Date, Properties}
-import java.security.MessageDigest
-import java.math.BigInteger
-import java.sql.Timestamp
-import java.time.Instant
-
 import br.com.bvs.datalake.core.Ernesto.WatchSmartContractsOn
 import br.com.bvs.datalake.core.HdfsPool.{Appendable, GetAppendable}
+import br.com.bvs.datalake.core.SmartContractBuilder.{Build, Built}
 import br.com.bvs.datalake.core.SmartContractRanger.{TransactionFailed, TransactionSuccess}
-import br.com.bvs.datalake.helper.PropertiesHelper
+import br.com.bvs.datalake.helper.{PathHelper, PropertiesHelper}
 import br.com.bvs.datalake.io.HdfsIO
 import br.com.bvs.datalake.io.HdfsIO._
 import br.com.bvs.datalake.model.{CoreMetadata, SmartContract}
 import br.com.bvs.datalake.transaction.FileToHiveTransaction
 import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
-import br.com.bvs.datalake.util.TextUtil
-
-import scala.concurrent.Await
 
 object SmartContractRanger {
   def props(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: ActorRef, ernesto: ActorRef): Props =
@@ -38,17 +29,19 @@ object SmartContractRanger {
 
 class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: ActorRef, ernesto: ActorRef)
   extends Actor with ActorLogging {
-  private var ongoingSm: mutable.HashMap[Path, (ActorRef, StringBuilder)] = _
+  private var ongoingSmarts: mutable.HashMap[Path, (ActorRef, SmartContract)] = _
   private var meta: CoreMetadata = _
   private var hdfsIO: ActorRef = _
+  private var smBuilder: ActorRef = _
   private var smAppendable: Appendable = _
 
   override def preStart(): Unit = {
     meta = PropertiesHelper.getCoreMetadata
     implicit val clientTimeout: Timeout = meta.clientTimeout
-    ongoingSm = new mutable.HashMap[Path, (ActorRef, StringBuilder)]()
+    ongoingSmarts = new mutable.HashMap[Path, (ActorRef, SmartContract)]()
 
     hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
+    smBuilder = context.actorOf(SmartContractBuilder.props)
 
     meta.smWatchHdfsDirs.foreach(dir => {
       hdfsIO ! CheckOrCreateDir(hdfsClient, dir)
@@ -70,15 +63,12 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     }
   }
 
-  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    // TODO remove this after the sm validation is complete: this actor can't broke!
-    context.parent ! Failure(reason)
-  }
-
   override def receive: Receive = {
-    case PathsList(paths) => onSmartContractsList(paths)
+    case PathsList(paths) => onList(paths)
 
-    case DataFromFile(smPath, smData) => onSmartContractDataReceived(smPath, smData)
+    case DataFromFile(smPath, smData) => onDataReceived(smPath, smData)
+
+    case Built(sm, ongoingPath) => onBuilt(sm, ongoingPath)
 
     case TransactionSuccess(path) => onTransactionSuccess(path)
 
@@ -87,157 +77,76 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     case Failure(e) => context.parent ! Failure(e)
   }
 
-  private def onSmartContractsList(paths: List[Path]): Unit = {
+  private def onList(paths: List[Path]): Unit = {
     if (paths.nonEmpty) {
       paths
         .filter(_.getName.contains(meta.smSufix))
         .foreach(p => {
-          log.info(s"reading smart contract ${p.getName}")
+          log.info(s"reading ${p.getName}")
           hdfsIO ! ReadFile(hdfsClient, p)
         })
     }
   }
 
-  private def onSmartContractDataReceived(smPath: Path, smData: String): Unit = {
-    val props = new Properties()
-    props.load(new ByteArrayInputStream(smData.getBytes()))
-    val sm = buildSmartContract(props)
+  private def onDataReceived(smPath: Path, smData: String): Unit = {
 
-    val check = validateSmartContract(sm)
-    if (!check) {
-      onTransactionFail(smPath, "sm not valid")
+    /* ensures that it's using the ongoing path, never the original */
+    val ongoingPath = PathHelper.buildOngoingPath(smPath, meta.ongoingDirName)
+
+    if (ongoingSmarts.contains(ongoingPath)) {
+      log.warning(s"already on transaction $ongoingPath")
+      hdfsIO ! RemoveFile(hdfsClient, smPath)
 
     } else {
-      val ongoingSmPath = buildOngoingPath(smPath)
+      hdfsIO ! MoveTo(hdfsClient, smPath, ongoingPath)
+      smBuilder ! Build(smData, ongoingPath)
+    }
+  }
 
-      if (ongoingSm.contains(ongoingSmPath)) {
-        log.warning(s"already processing $ongoingSmPath")
-        hdfsIO ! RemoveFile(hdfsClient, smPath)
+  private def onBuilt(sm: SmartContract, ongoingPath: Path): Unit = {
+    val transaction = createTransaction(sm.transaction, ongoingPath, sm)
 
-      } else {
-        hdfsIO ! MoveTo(hdfsClient, smPath, ongoingSmPath)
-
-        val hash = buildHash(smData.getBytes())
-        val transaction = createTransaction(sm.transaction, ongoingSmPath, sm, hash)
-
-        if (transaction == null) {
-          onTransactionFail(ongoingSmPath, s"transaction ${sm.transaction} is not valid")
-        } else {
-          ongoingSm += ongoingSmPath -> (transaction, serializeSmartContract(ongoingSmPath.getName, sm, hash))
-          transaction ! Start
-        }
-      }
+    if (transaction == null) {
+      onTransactionFail(ongoingPath, s"transaction ${sm.transaction} is not valid")
+    } else {
+      ongoingSmarts += ongoingPath -> (transaction, sm)
+      transaction ! Start
     }
   }
 
   private def onTransactionFail(ongoingPath: Path, cause: String): Unit = {
-    val failPath = buildFailPath(ongoingPath)
-    val errorFilePath = buildErrorFilePath(ongoingPath)
+    val failPath = PathHelper.buildFailPath(ongoingPath, meta.failDirName)
+    val errorFilePath = PathHelper.buildErrorFilePath(ongoingPath, meta.smSufix, meta.failDirName)
 
     hdfsIO ! MoveTo(hdfsClient, ongoingPath, failPath)
     hdfsIO ! OverwriteFileWithData(hdfsClient, errorFilePath, cause)
 
-    if(ongoingSm.contains(ongoingPath)) {
-      context.stop(ongoingSm(ongoingPath)._1)
-      ongoingSm.remove(ongoingPath)
+    if(ongoingSmarts.contains(ongoingPath)) {
+      context.stop(ongoingSmarts(ongoingPath)._1)
+      ongoingSmarts.remove(ongoingPath)
     }
 
-    log.error(s"failed: $ongoingPath, $cause")
+    log.error(s"fail: $ongoingPath, $cause")
   }
 
   private def onTransactionSuccess(ongoingPath: Path): Unit = {
-    val donePath = buildDonePath(ongoingPath)
+    val donePath = PathHelper.buildDonePath(ongoingPath, meta.doneDirName)
     hdfsIO ! MoveTo(hdfsClient, ongoingPath, donePath)
-    hdfsIO ! Append("sm", smAppendable.appender, ongoingSm(ongoingPath)._2)
-    context.stop(ongoingSm(ongoingPath)._1)
-    ongoingSm.remove(ongoingPath)
+
+    val ongoingSm = ongoingSmarts(ongoingPath)
+    hdfsIO ! Append("sm", smAppendable.appender, ongoingSm._2.serializeCSV)
+    context.stop(ongoingSm._1)
+    ongoingSmarts.remove(ongoingPath)
     log.info(s"success: $ongoingPath")
   }
 
-  private def createTransaction(transaction: String, path: Path, sm: SmartContract, hash: String): ActorRef = {
+  private def createTransaction(transaction: String, path: Path, sm: SmartContract): ActorRef = {
     transaction match {
       case "FileToHiveTransaction" =>
-        context.actorOf(FileToHiveTransaction.props(path, sm, this.hdfsClient, this.hivePool, meta.clientTimeout), s"transaction-$hash")
+        context.actorOf(FileToHiveTransaction.props(path, sm, this.hdfsClient, this.hivePool, meta.clientTimeout), s"${sm.hash}")
 
       case _ => null
     }
   }
 
-  private def buildSmartContract(props: Properties): SmartContract = {
-    SmartContract(
-      props.getProperty("source.server"),
-      props.getProperty("source.path"),
-      props.getProperty("source.header").toBoolean,
-      props.getProperty("source.delimiter"),
-      props.getProperty("source.remove").toBoolean,
-      props.getProperty("source.time.format"),
-      props.getProperty("destination.fields").split(",").toList,
-      props.getProperty("destination.types").split(",").toList,
-      props.getProperty("destination.path"),
-      props.getProperty("destination.database"),
-      props.getProperty("destination.table"),
-      props.getProperty("destination.overwrite").toBoolean,
-      props.getProperty("transaction"),
-      props.getProperty("requester"),
-      props.getProperty("authorizing")
-    )
-  }
-
-  private def validateSmartContract(sm: SmartContract): Boolean = {
-    // TODO create validations
-    true
-  }
-
-  private def serializeSmartContract(smFileName: String, sm: SmartContract, hash: String): StringBuilder = {
-    val newline = "\n"
-    val smBuilder = new StringBuilder()
-
-    smBuilder.append(
-      s"""$hash
-         |${new Timestamp(new Date().getTime)}
-         |${sm.requester}
-         |${sm.authorizing}
-         |$smFileName
-         |${sm.transaction}
-         |${sm.sourceServer}
-         |${sm.sourcePath}
-         |${sm.destinationPath}
-         |${sm.destinationDatabase}
-         |${sm.destinationTable}
-         |${TextUtil.serializeList(sm.destinationFields)}
-         |${TextUtil.serializeList(sm.destinationTypes)}
-         |${sm.destinationOverwrite}"""
-        .stripMargin.replaceAll(newline, "|")).append(newline)
-
-    smBuilder
-  }
-
-  private def buildHash(array: Array[Byte]): String = {
-    val bytesTime = Instant.now.toString.getBytes
-    val sum = array ++ bytesTime
-    val digest = MessageDigest.getInstance("MD5").digest(sum)
-    val bigInteger = new BigInteger(1, digest)
-    bigInteger.toString(16)
-  }
-
-  private def buildOngoingPath(smPath: Path) = {
-    smPath.getParent.getName == meta.ongoingDirName match {
-      case true => smPath
-      case false => new Path(s"${smPath.getParent}/${meta.ongoingDirName}/${smPath.getName}")
-    }
-  }
-
-  private def buildDonePath(ongoingPath: Path): Path = {
-    new Path(s"${ongoingPath.getParent.getParent}/${meta.doneDirName}/${ongoingPath.getName}")
-  }
-
-  private def buildFailPath(ongoingPath: Path): Path = {
-    new Path(s"${ongoingPath.getParent.getParent}/${meta.failDirName}/${ongoingPath.getName}")
-  }
-
-  private def buildErrorFilePath(ongoingPath: Path): Path = {
-    val name = ongoingPath.getName.replace(s".${meta.smSufix}", "")
-    val errorName = s"$name.error"
-    new Path(s"${ongoingPath.getParent.getParent}/${meta.failDirName}/$errorName")
-  }
 }
