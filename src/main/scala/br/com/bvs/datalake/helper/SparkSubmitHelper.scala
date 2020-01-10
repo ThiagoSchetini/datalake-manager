@@ -1,6 +1,6 @@
 package br.com.bvs.datalake.helper
 
-import br.com.bvs.datalake.model.SubmitMetadata
+import br.com.bvs.datalake.model.meta.SubmitMetadata
 
 object SparkSubmitHelper {
   private val multiply = 1024

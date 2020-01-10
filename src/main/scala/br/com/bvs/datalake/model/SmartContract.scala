@@ -1,50 +1,27 @@
 package br.com.bvs.datalake.model
 
 import java.sql.Timestamp
-import br.com.bvs.datalake.util.TextUtil
+
+import br.com.bvs.datalake.model.property.TransactionProps
+import br.com.bvs.datalake.model.serializable.SerializableToCSV
 
 case class SmartContract(hash: String,
                          creationTime: Timestamp,
-                         requester: String,
-                         authorizing: String,
-                         fileName: String,
-                         transaction: String,
-                         sourceServer: String,
-                         sourcePath: String,
-                         sourceHeader: Boolean,
-                         sourceDelimiter: String,
-                         sourceRemove: Boolean,
-                         sourceTimeFormat: String,
-                         destinationPath: String,
-                         destinationDatabase: String,
-                         destinationTable: String,
-                         destinationFields: List[String],
-                         destinationTypes: List[String],
-                         destinationOverwrite: Boolean)
- {
+                         smRequester: String,
+                         smAuthorizing: String,
+                         transactionProps: Option[TransactionProps]) extends SerializableToCSV {
 
-  def serializeCSV: StringBuilder = {
+  def serializeToCSV: StringBuilder = {
     val newline = "\n"
     val smBuilder = new StringBuilder()
 
     smBuilder.append(
       s"""$hash
          |$creationTime
-         |$requester
-         |$authorizing
-         |$fileName
-         |$transaction
-         |$sourceServer
-         |$sourcePath
-         |$destinationPath
-         |$destinationDatabase
-         |$destinationTable
-         |${TextUtil.serializeList(destinationFields)}
-         |${TextUtil.serializeList(destinationTypes)}
-         |$destinationOverwrite"""
+         |$smRequester
+         |$smAuthorizing"""
         .stripMargin.replaceAll(newline, "|")).append(newline)
 
     smBuilder
   }
-
 }

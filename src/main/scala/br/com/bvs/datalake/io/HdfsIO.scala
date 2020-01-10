@@ -5,7 +5,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import akka.actor.Status.Failure
 import org.apache.hadoop.fs._
 import HdfsIO._
-import br.com.bvs.datalake.helper.HadoopConfigurationHelper
+import br.com.bvs.datalake.helper.HadoopConfHelper
 
 object HdfsIO {
   def props: Props = Props(new HdfsIO)
@@ -31,7 +31,6 @@ object HdfsIO {
   case class MoveTo(hdfsClient: FileSystem, sourcePath: Path, targetPath: Path)
 
   case class RemoveDirectory(hdfsClient: FileSystem, path: Path)
-
   case class RemoveFile(hdfsClient: FileSystem, path: Path)
 }
 
@@ -39,7 +38,7 @@ class HdfsIO extends Actor with ActorLogging {
   private var bufferSize: Int = _
 
   override def preStart(): Unit = {
-    bufferSize = HadoopConfigurationHelper.getIOFileBufferSize
+    bufferSize = HadoopConfHelper.getIOFileBufferSize
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {

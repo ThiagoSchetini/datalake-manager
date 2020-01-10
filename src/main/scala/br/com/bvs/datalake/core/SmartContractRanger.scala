@@ -4,6 +4,7 @@ import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 import akka.pattern.ask
+
 import scala.collection.mutable
 import scala.concurrent.Await
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -14,7 +15,8 @@ import br.com.bvs.datalake.core.SmartContractRanger.{TransactionFailed, Transact
 import br.com.bvs.datalake.helper.{PathHelper, PropertiesHelper}
 import br.com.bvs.datalake.io.HdfsIO
 import br.com.bvs.datalake.io.HdfsIO._
-import br.com.bvs.datalake.model.{CoreMetadata, SmartContract}
+import br.com.bvs.datalake.model.SmartContract
+import br.com.bvs.datalake.model.meta.CoreMetadata
 import br.com.bvs.datalake.transaction.FileToHiveTransaction
 import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
 
@@ -104,10 +106,10 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
   }
 
   private def onBuilt(sm: SmartContract, ongoingPath: Path): Unit = {
-    val transaction = createTransaction(sm.transaction, ongoingPath, sm)
+    val transaction = createTransaction(sm.transactionProps.transactionName, ongoingPath, sm)
 
     if (transaction == null) {
-      onTransactionFail(ongoingPath, s"transaction ${sm.transaction} is not valid")
+      onTransactionFail(ongoingPath, s"transaction ${sm.transactionProps} is not valid")
     } else {
       ongoingSmarts += ongoingPath -> (transaction, sm)
       transaction ! Start
@@ -140,8 +142,8 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     log.info(s"success: $ongoingPath")
   }
 
-  private def createTransaction(transaction: String, path: Path, sm: SmartContract): ActorRef = {
-    transaction match {
+  private def createTransaction(transactionName: String, path: Path, sm: SmartContract): ActorRef = {
+    transactionName match {
       case "FileToHiveTransaction" =>
         context.actorOf(FileToHiveTransaction.props(path, sm, this.hdfsClient, this.hivePool, meta.clientTimeout), s"${sm.hash}")
 

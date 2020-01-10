@@ -1,42 +1,34 @@
 #!/usr/bin/env bash
 
-title="FileToHiveTransaction:"
+transaction="FileToHive"
+log="[DATA] Transaction ${transaction}:"
 
 #-- local paths --#
 test=src/test/data/FileToHiveTransaction
-csv=${test}/file1.csv
-csv2=${test}/file2.csv
-csv3=${test}/file3.csv
-smSingleCSV=${test}/sm-single-csv.properties
-smMultiCSV=${test}/sm-multi-csv.properties
+source1=${test}/source1.csv
+source2=${test}/source2.csv
+source3=${test}/source3.csv
+smPath=${test}/file-to-hive.properties
 
 #-- hdfs paths --#
-testHdfs=/br/com/bvs/datalake/transaction/FileToHiveTransaction
-watchSingleCSVSM=${testHdfs}/watchSingleCSVSM
-watchMultiCSVSM=${testHdfs}/watchMultiCSVSM
-sourceSingleCSV=${testHdfs}/sourceSingleCSV
-sourceMultiCSV=${testHdfs}/sourceMultiCSV
-destiny=${testHdfs}/destiny
+transactionTestPath=/br/com/bvs/datalake/transaction/FileToHiveTransaction
+watchSMPath=${transactionTestPath}/watchSM
+destinyPath=${transactionTestPath}/destiny
+sourcesPath=${transactionTestPath}/sources
 
-#-- sanitize hdfs and hive --#
-echo "[DATA] ${title} prepare destiny"
-hdfs dfs -rm -R -skipTrash ${destiny} 2>/dev/null
-hdfs dfs -mkdir -p ${destiny}
+echo "${log} renew HDFS directories"
+hdfs dfs -rm -R -skipTrash ${destinyPath} 2>/dev/null
+hdfs dfs -mkdir -p ${destinyPath}
+
+echo "${log} drop Hive table"
 hive -e "drop table if exists testdb.types;"
 
-echo "[DATA] ${title} prepare single csv"
-hdfs dfs -rm -R -skipTrash ${sourceSingleCSV} 2>/dev/null
-hdfs dfs -rm -R -skipTrash ${watchSingleCSVSM} 2>/dev/null
-hdfs dfs -mkdir -p ${sourceSingleCSV}
-hdfs dfs -mkdir -p ${watchSingleCSVSM}
-hdfs dfs -copyFromLocal ${csv} ${sourceSingleCSV}
-hdfs dfs -copyFromLocal ${smSingleCSV} ${watchSingleCSVSM}
-
-echo "[DATA] ${title} prepare multi csv"
-hdfs dfs -rm -R -skipTrash ${sourceMultiCSV} 2>/dev/null
-hdfs dfs -rm -R -skipTrash ${watchMultiCSVSM} 2>/dev/null
-hdfs dfs -mkdir -p ${sourceMultiCSV}
-hdfs dfs -mkdir -p ${watchMultiCSVSM}
-hdfs dfs -copyFromLocal ${csv2} ${sourceMultiCSV}
-hdfs dfs -copyFromLocal ${csv3} ${sourceMultiCSV}
-hdfs dfs -copyFromLocal ${smMultiCSV} ${watchMultiCSVSM}
+echo "${log} copy files"
+hdfs dfs -rm -R -skipTrash ${sourcesPath} 2>/dev/null
+hdfs dfs -rm -R -skipTrash ${watchSMPath} 2>/dev/null
+hdfs dfs -mkdir -p ${sourcesPath}
+hdfs dfs -mkdir -p ${watchSMPath}
+hdfs dfs -copyFromLocal ${source1} ${sourcesPath}
+hdfs dfs -copyFromLocal ${source2} ${sourcesPath}
+hdfs dfs -copyFromLocal ${source3} ${sourcesPath}
+hdfs dfs -copyFromLocal ${smPath} ${watchSMPath}

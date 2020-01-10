@@ -4,7 +4,7 @@ import java.io.{File, FileInputStream}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 
-object HadoopConfigurationHelper {
+object HadoopConfHelper {
 
   @volatile private var lastConfiguration: Configuration = _
 

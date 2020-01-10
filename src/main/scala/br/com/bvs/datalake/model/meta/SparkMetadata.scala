@@ -1,4 +1,4 @@
-package br.com.bvs.datalake.model
+package br.com.bvs.datalake.model.meta
 
 case class SparkMetadata(production: Boolean,
                          search: String,

@@ -16,18 +16,19 @@ import br.com.bvs.datalake.helper._
 import br.com.bvs.datalake.io.HdfsIO.RemoveDirectory
 import br.com.bvs.datalake.io.{HdfsIO, HiveIO}
 import br.com.bvs.datalake.io.HiveIO.{CheckTable, TableChecked}
-import br.com.bvs.datalake.model.{SmartContract, SubmitMetadata}
+import br.com.bvs.datalake.model.meta.SubmitMetadata
+import br.com.bvs.datalake.model.property.FileToHiveProps
 import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
 import br.com.bvs.datalake.util.TextUtil
 
 object FileToHiveTransaction {
-  def props(path: Path, sm: SmartContract, hdfsClient: FileSystem, hivePool: ActorRef, timeout: Timeout):Props =
-    Props(new FileToHiveTransaction(path, sm, hdfsClient, hivePool, timeout))
+  def props(path: Path, props: FileToHiveProps, hdfsClient: FileSystem, hivePool: ActorRef, timeout: Timeout):Props =
+    Props(new FileToHiveTransaction(path, props, hdfsClient, hivePool, timeout))
 
   case object Start
 }
 
-class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSystem, hivePool: ActorRef, timeout: Timeout)
+class FileToHiveTransaction(smPath: Path, props: FileToHiveProps, hdfsClient: FileSystem, hivePool: ActorRef, timeout: Timeout)
   extends Actor with ActorLogging {
   private var hiveConn: Connection = _
   private var hiveIO: ActorRef = _
@@ -54,11 +55,11 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSys
   override def receive: Receive = {
     case Start =>
       log.info(s"start: ${smPath.getName}")
-      val fields = (sm.destinationFields, sm.destinationTypes).zipped.map((_,_)).toList
-      hiveIO ! CheckTable(hiveConn, sm.destinationDatabase, sm.destinationTable, sm.destinationPath, fields)
+      val fields = (props.destinationFields, props.destinationTypes).zipped.map((_,_)).toList
+      hiveIO ! CheckTable(hiveConn, props.destinationDatabase, props.destinationTable, props.destinationPath, fields)
 
     case TableChecked =>
-      log.info(s"checked: ${sm.destinationDatabase}.${sm.destinationTable}")
+      log.info(s"checked: ${props.destinationDatabase}.${props.destinationTable}")
       val meta = PropertiesHelper.getSparkMetadata
       var mem, cores, executors, eMem, eCores, connections, retries = 2
 
@@ -85,22 +86,22 @@ class FileToHiveTransaction(smPath: Path, sm: SmartContract, hdfsClient: FileSys
         eCores,
         connections,
         retries,
-        sm.sourcePath,
-        sm.destinationPath,
-        sm.destinationOverwrite,
+        props.sourcePath,
+        props.destinationPath,
+        props.destinationOverwrite,
         pipeline,
-        TextUtil.serializeList(sm.destinationTypes),
-        sm.sourceTimeFormat,
-        TextUtil.serializeList(sm.destinationFields),
-        sm.sourceHeader,
-        sm.sourceDelimiter)
+        TextUtil.serializeList(props.destinationTypes),
+        props.sourceTimeFormat,
+        TextUtil.serializeList(props.destinationFields),
+        props.sourceHeader,
+        props.sourceDelimiter)
 
       cmd = SparkSubmitHelper.createSparkSubmit(submitMeta)
       val result = executeSparkSubmit(meta.search, cmd)
 
       if (result._1 == 0) {
-        if (sm.sourceRemove)
-          hdfsIO ! RemoveDirectory(hdfsClient, new Path(sm.sourcePath))
+        if (props.sourceRemove)
+          hdfsIO ! RemoveDirectory(hdfsClient, new Path(props.sourcePath))
         context.parent ! TransactionSuccess(smPath)
       } else
         context.parent ! TransactionFailed(smPath, result._2.mkString)

@@ -14,7 +14,7 @@ import br.com.bvs.datalake.core.HdfsPool.GetHDFSClient
 import br.com.bvs.datalake.core.Supervisor.ShutDownManager
 import br.com.bvs.datalake.io.LocalIO
 import br.com.bvs.datalake.io.LocalIO.{FileExists, NotifyIfFileExists, RemoveFile}
-import br.com.bvs.datalake.model.CoreMetadata
+import br.com.bvs.datalake.model.meta.CoreMetadata
 
 object Supervisor {
   def props(reaper: ActorRef): Props = Props(new Supervisor(reaper))

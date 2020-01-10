@@ -34,4 +34,11 @@ object TextUtil {
     builder.mkString
   }
 
+  def isNotNullAndNotEmpty(str: String): Boolean = {
+    if (str == null)
+      false
+    else
+      !str.isEmpty
+  }
+
 }

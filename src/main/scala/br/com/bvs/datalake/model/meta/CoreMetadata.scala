@@ -1,4 +1,4 @@
-package br.com.bvs.datalake.model
+package br.com.bvs.datalake.model.meta
 
 import akka.util.Timeout
 

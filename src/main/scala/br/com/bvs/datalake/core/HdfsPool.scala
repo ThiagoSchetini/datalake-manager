@@ -5,7 +5,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
 import scala.collection.mutable
 import br.com.bvs.datalake.core.HdfsPool._
-import br.com.bvs.datalake.helper.HadoopConfigurationHelper
+import br.com.bvs.datalake.helper.HadoopConfHelper
 import br.com.bvs.datalake.io.HdfsIO
 
 object HdfsPool {
@@ -30,7 +30,7 @@ class HdfsPool extends Actor with ActorLogging {
   override def receive: Receive = {
     case GetHDFSClient =>
       if (hdfsClient == null) {
-        hdfsClient = FileSystem.get(HadoopConfigurationHelper.getConfiguration)
+        hdfsClient = FileSystem.get(HadoopConfHelper.getConfiguration)
       } else {
         /* test the Client and throws Exception if don't connect */
         hdfsClient.getStatus

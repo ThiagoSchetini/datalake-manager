@@ -18,16 +18,24 @@ For user (hard) tests:
     + sm with no or empty required fields
     + sm with wrong types
     
-For future versions:
+Next features:
 
-    + type of smart contract (different sm classes will be created)
     + tunning on YARN
-    + Fields will be optional (choose)
     + cobol/positional in
+    + rollback action on transactions
+    + Fields will be optional (choose)
     
-Auto tests implementations:
+Test Environment next features:
 
-    + coverage with tests
+    + parallel actions to prepare data test write on (scala... python3... ?)
+    
+Multi SM future solution:
+
+    + smart contract as multi
+    + sm as .json
+    + TransactionRanger (concatenator of transactions) absorbs all the transaction logic (one per transaction, N actors)
+    + sm data storage needs to absorb N transactions on a single SM
+    + transactions need to have a rollback action (or do nothing)
 
 ### requirements
 Up and running environment:

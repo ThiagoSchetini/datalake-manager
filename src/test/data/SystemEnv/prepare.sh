@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 
-echo "[TEST] SmartContract: hive smart contract table"
+log="[SYSTEM] SmartContract:"
 
 #-- hdfs --#
 testHdfsSM=/smartcontract
 
+echo "${log} renew HDFS directories"
 hdfs dfs -rm -R -skipTrash ${testHdfsSM} 2>/dev/null
 hdfs dfs -mkdir -p ${testHdfsSM}
+
+echo "${log} renew SmartContract Hive table"
 hive -e "drop table if exists testdb.smartcontract"
 
 hive -e \
@@ -30,6 +33,6 @@ fields terminated by '|' \
 collection items terminated by ',' \
 location '/smartcontract';"
 
-echo "[TEST] Shutdown Signal: prepare directory"
+echo "${log} checking signals system directory"
 mkdir target/signals 2>/dev/null
 touch target/signals/package.signal

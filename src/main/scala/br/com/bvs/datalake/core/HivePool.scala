@@ -2,11 +2,13 @@ package br.com.bvs.datalake.core
 
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.actor.Status.Failure
+
 import scala.collection.mutable
 import java.sql.{Connection, DriverManager}
+
 import br.com.bvs.datalake.core.HivePool.{DisposeConnection, GetHiveConnection}
 import br.com.bvs.datalake.helper.PropertiesHelper
-import br.com.bvs.datalake.model.CoreMetadata
+import br.com.bvs.datalake.model.meta.CoreMetadata
 
 object HivePool {
   val props: Props = Props(new HivePool)
