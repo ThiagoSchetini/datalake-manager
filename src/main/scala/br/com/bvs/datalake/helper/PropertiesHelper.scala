@@ -2,13 +2,11 @@ package br.com.bvs.datalake.helper
 
 import java.io.FileInputStream
 import java.util.Properties
-
 import scala.concurrent.duration._
-import akka.util.Timeout
-import br.com.bvs.datalake.model.SparkMetadata
-import br.com.bvs.datalake.model.meta.{CoreMetadata, SparkMetadata}
-
 import scala.language.postfixOps
+import akka.util.Timeout
+
+import br.com.bvs.datalake.model.meta.{CoreMetadata, SparkMetadata}
 
 object PropertiesHelper {
   private val datalakeManagerProps = sys.env.get("DATALAKE_MANAGER_PROPS").mkString

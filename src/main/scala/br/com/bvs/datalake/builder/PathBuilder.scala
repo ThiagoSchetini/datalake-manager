@@ -1,8 +1,8 @@
-package br.com.bvs.datalake.helper
+package br.com.bvs.datalake.builder
 
 import org.apache.hadoop.fs.Path
 
-object PathHelper {
+object PathBuilder {
 
   def buildOngoingPath(smPath: Path, ongoingDirName: String) = {
 

@@ -5,21 +5,12 @@ Warning: Clone on ~/repository/datalake
 
 "SM"/"sm" signum = Smart Contract
 
-### TODO 
-
-For the first deploy:
-    
-    + PT-BR types
-    + PT-BR transactions
-    + sm validation
-    
-For user (hard) tests:
-
-    + sm with no or empty required fields
-    + sm with wrong types
-    
+### TODO list
 Next features:
 
+    + Spark Generic Transaction Integration
+    + Google Cloud Storage Client
+    + new Transaction: HDFSToCloudStorageTransaction
     + tunning on YARN
     + cobol/positional in
     + rollback action on transactions
@@ -27,7 +18,7 @@ Next features:
     
 Test Environment next features:
 
-    + parallel actions to prepare data test write on (scala... python3... ?)
+    + parallel actions to prepare data test (write on scala... python3... ?)
     
 Multi SM future solution:
 

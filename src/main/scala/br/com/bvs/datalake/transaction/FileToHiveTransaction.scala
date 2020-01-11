@@ -10,6 +10,7 @@ import scala.sys.process._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import java.sql.Connection
 
+import br.com.bvs.datalake.builder.SparkSubmitBuilder
 import br.com.bvs.datalake.core.HivePool.{DisposeConnection, GetHiveConnection}
 import br.com.bvs.datalake.core.SmartContractRanger.{TransactionFailed, TransactionSuccess}
 import br.com.bvs.datalake.helper._
@@ -96,7 +97,7 @@ class FileToHiveTransaction(smPath: Path, props: FileToHiveProps, hdfsClient: Fi
         props.sourceHeader,
         props.sourceDelimiter)
 
-      cmd = SparkSubmitHelper.createSparkSubmit(submitMeta)
+      cmd = SparkSubmitBuilder.build(submitMeta)
       val result = executeSparkSubmit(meta.search, cmd)
 
       if (result._1 == 0) {

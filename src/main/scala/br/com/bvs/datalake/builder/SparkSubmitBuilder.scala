@@ -1,8 +1,8 @@
-package br.com.bvs.datalake.helper
+package br.com.bvs.datalake.builder
 
 import br.com.bvs.datalake.model.meta.SubmitMetadata
 
-object SparkSubmitHelper {
+object SparkSubmitBuilder {
   private val multiply = 1024
   private val factor = 4
   private val master = "yarn"
@@ -38,7 +38,7 @@ object SparkSubmitHelper {
   private val yarnMaxRetries = "spark.yarn.maxAppAttempts"
   private val shuffleMaxRetries = "spark.shuffle.io.maxRetries"
 
-  def createSparkSubmit(meta: SubmitMetadata): Seq[String] = {
+  def build(meta: SubmitMetadata): Seq[String] = {
     val overhead = meta.driverMemory.*(multiply)./(factor)
 
     Seq(meta.submit,

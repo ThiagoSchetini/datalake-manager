@@ -4,21 +4,23 @@ import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 import akka.pattern.ask
-
 import scala.collection.mutable
 import scala.concurrent.Await
 import org.apache.hadoop.fs.{FileSystem, Path}
+
 import br.com.bvs.datalake.core.Ernesto.WatchSmartContractsOn
 import br.com.bvs.datalake.core.HdfsPool.{Appendable, GetAppendable}
-import br.com.bvs.datalake.core.SmartContractBuilder.{Build, Built}
 import br.com.bvs.datalake.core.SmartContractRanger.{TransactionFailed, TransactionSuccess}
-import br.com.bvs.datalake.helper.{PathHelper, PropertiesHelper}
+import br.com.bvs.datalake.exception.SmartContractException
+import br.com.bvs.datalake.helper.PropertiesHelper
 import br.com.bvs.datalake.io.HdfsIO
 import br.com.bvs.datalake.io.HdfsIO._
 import br.com.bvs.datalake.model.SmartContract
 import br.com.bvs.datalake.model.meta.CoreMetadata
+import br.com.bvs.datalake.model.property.FileToHiveProps
 import br.com.bvs.datalake.transaction.FileToHiveTransaction
 import br.com.bvs.datalake.transaction.FileToHiveTransaction.Start
+import br.com.bvs.datalake.builder.{PathBuilder, SmartContractBuilder}
 
 object SmartContractRanger {
   def props(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: ActorRef, ernesto: ActorRef): Props =
@@ -34,16 +36,13 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
   private var ongoingSmarts: mutable.HashMap[Path, (ActorRef, SmartContract)] = _
   private var meta: CoreMetadata = _
   private var hdfsIO: ActorRef = _
-  private var smBuilder: ActorRef = _
   private var smAppendable: Appendable = _
 
   override def preStart(): Unit = {
     meta = PropertiesHelper.getCoreMetadata
     implicit val clientTimeout: Timeout = meta.clientTimeout
     ongoingSmarts = new mutable.HashMap[Path, (ActorRef, SmartContract)]()
-
     hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
-    smBuilder = context.actorOf(SmartContractBuilder.props)
 
     meta.smWatchHdfsDirs.foreach(dir => {
       hdfsIO ! CheckOrCreateDir(hdfsClient, dir)
@@ -70,8 +69,6 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
 
     case DataFromFile(smPath, smData) => onDataReceived(smPath, smData)
 
-    case Built(sm, ongoingPath) => onBuilt(sm, ongoingPath)
-
     case TransactionSuccess(path) => onTransactionSuccess(path)
 
     case TransactionFailed(path, errorLog) => onTransactionFail(path, errorLog)
@@ -93,7 +90,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
   private def onDataReceived(smPath: Path, smData: String): Unit = {
 
     /* ensures that it's using the ongoing path, never the original */
-    val ongoingPath = PathHelper.buildOngoingPath(smPath, meta.ongoingDirName)
+    val ongoingPath = PathBuilder.buildOngoingPath(smPath, meta.ongoingDirName)
 
     if (ongoingSmarts.contains(ongoingPath)) {
       log.warning(s"already on transaction $ongoingPath")
@@ -101,24 +98,32 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
 
     } else {
       hdfsIO ! MoveTo(hdfsClient, smPath, ongoingPath)
-      smBuilder ! Build(smData, ongoingPath)
-    }
-  }
 
-  private def onBuilt(sm: SmartContract, ongoingPath: Path): Unit = {
-    val transaction = createTransaction(sm.transactionProps.transactionName, ongoingPath, sm)
+      try {
+        val sm = SmartContractBuilder.build(smData)
 
-    if (transaction == null) {
-      onTransactionFail(ongoingPath, s"transaction ${sm.transactionProps} is not valid")
-    } else {
-      ongoingSmarts += ongoingPath -> (transaction, sm)
-      transaction ! Start
+        val transactionName = sm.transactionProps.get.transactionName
+        val transaction = createTransaction(transactionName, ongoingPath, sm)
+
+        if (transaction == null) {
+          onTransactionFail(ongoingPath, s"transaction $transactionName does not exist")
+
+        } else {
+          ongoingSmarts += ongoingPath -> (transaction, sm)
+          transaction ! Start
+        }
+
+      } catch {
+        /* catches exception of SmartContractBuilder.build(smData) */
+        case e: SmartContractException => onTransactionFail(ongoingPath, e.getMessage)
+      }
     }
+
   }
 
   private def onTransactionFail(ongoingPath: Path, cause: String): Unit = {
-    val failPath = PathHelper.buildFailPath(ongoingPath, meta.failDirName)
-    val errorFilePath = PathHelper.buildErrorFilePath(ongoingPath, meta.smSufix, meta.failDirName)
+    val failPath = PathBuilder.buildFailPath(ongoingPath, meta.failDirName)
+    val errorFilePath = PathBuilder.buildErrorFilePath(ongoingPath, meta.smSufix, meta.failDirName)
 
     hdfsIO ! MoveTo(hdfsClient, ongoingPath, failPath)
     hdfsIO ! OverwriteFileWithData(hdfsClient, errorFilePath, cause)
@@ -132,20 +137,33 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
   }
 
   private def onTransactionSuccess(ongoingPath: Path): Unit = {
-    val donePath = PathHelper.buildDonePath(ongoingPath, meta.doneDirName)
+    val donePath = PathBuilder.buildDonePath(ongoingPath, meta.doneDirName)
     hdfsIO ! MoveTo(hdfsClient, ongoingPath, donePath)
 
     val ongoingSm = ongoingSmarts(ongoingPath)
-    hdfsIO ! Append("sm", smAppendable.appender, ongoingSm._2.serializeCSV)
+    hdfsIO ! Append("sm", smAppendable.appender, ongoingSm._2.serializeToCSV)
+
+    // TODO create Transactions entities !
+
+    // TODO serialize csv and append FileToHiveTransaction
+
     context.stop(ongoingSm._1)
     ongoingSmarts.remove(ongoingPath)
     log.info(s"success: $ongoingPath")
   }
 
   private def createTransaction(transactionName: String, path: Path, sm: SmartContract): ActorRef = {
+
     transactionName match {
+
       case "FileToHiveTransaction" =>
-        context.actorOf(FileToHiveTransaction.props(path, sm, this.hdfsClient, this.hivePool, meta.clientTimeout), s"${sm.hash}")
+        context.actorOf(FileToHiveTransaction.props(
+          path,
+          sm.transactionProps.get.asInstanceOf[FileToHiveProps],
+          this.hdfsClient,
+          this.hivePool,
+          meta.clientTimeout),
+          s"${sm.hash}")
 
       case _ => null
     }

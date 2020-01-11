@@ -35,10 +35,8 @@ object TextUtil {
   }
 
   def isNotNullAndNotEmpty(str: String): Boolean = {
-    if (str == null)
-      false
-    else
-      !str.isEmpty
+    if (str == null || str.isEmpty) false
+    else true
   }
 
 }
