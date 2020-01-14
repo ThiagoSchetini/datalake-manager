@@ -3,9 +3,10 @@ package br.com.bvs.datalake.model.property
 import java.util.Properties
 
 object FileToHiveProps {
-  def apply(transactionName: String, props: Properties): FileToHiveProps = {
+  def apply(smHash: String, transactionName: String, props: Properties): FileToHiveProps = {
 
     new FileToHiveProps(
+      smHash,
       transactionName,
       props.getProperty("source.server"),
       props.getProperty("source.path"),
@@ -22,7 +23,8 @@ object FileToHiveProps {
   }
 }
 
-case class FileToHiveProps(transactionName: String,
+case class FileToHiveProps(smHash: String,
+                           transactionName: String,
                            sourceServer: String,
                            sourcePath: String,
                            sourceHeader: Boolean,

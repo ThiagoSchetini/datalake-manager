@@ -53,7 +53,7 @@ object SmartContractBuilder {
       throw new Exception("transaction name")
 
       /* there is a Number or Data Exception risk at creation of any TransactionProps object */
-      val transactionProps = createTransactionProps(transactionName, props)
+      val transactionProps = createTransactionProps(sm.hash, transactionName, props)
 
       if(!validateTransaction(transactionProps))
         throw new Exception("transaction data")
@@ -78,9 +78,9 @@ object SmartContractBuilder {
     TextUtil.isNotNullAndNotEmpty(transactionName)
   }
 
-  private def createTransactionProps(transactionName: String, props: Properties): TransactionProps = {
+  private def createTransactionProps(hash: String, transactionName: String, props: Properties): TransactionProps = {
     transactionName match {
-      case "FileToHiveTransaction" => FileToHiveProps(transactionName, props)
+      case "FileToHiveTransaction" => FileToHiveProps(hash, transactionName, props)
       case _ => null
     }
   }
