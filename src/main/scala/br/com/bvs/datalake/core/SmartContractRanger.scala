@@ -44,7 +44,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     ongoingSmarts = new mutable.HashMap[Path, (ActorRef, SmartContract)]()
     hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
 
-    meta.smWatchHdfsDirs.foreach(dir => {
+    meta.smHdfsWatch.foreach(dir => {
       hdfsIO ! CheckOrCreateDir(hdfsClient, dir)
       hdfsIO ! CheckOrCreateDir(hdfsClient, s"$dir/${meta.failDirName}")
       hdfsIO ! CheckOrCreateDir(hdfsClient, s"$dir/${meta.ongoingDirName}")
@@ -55,7 +55,7 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
       hdfsIO ! ListFilesFrom(hdfsClient, s"$dir/${meta.ongoingDirName}")
     })
 
-    val futureAppender = hdfsPool ? GetAppendable(meta.smDestinyHdfsDir)
+    val futureAppender = hdfsPool ? GetAppendable(meta.smHdfsDestiny)
     try {
       smAppendable = Await.result(futureAppender, meta.clientTimeout.duration).asInstanceOf[Appendable]
     } catch {

@@ -52,7 +52,7 @@ class Supervisor(reaper: ActorRef) extends Actor with ActorLogging {
 
     meta = PropertiesHelper.getCoreMetadata
     enableTwoWayErrorProtection()
-    ernesto ! WatchShutDownSignalOn(s"${meta.shutdownSignalLocalDir}/${meta.shutdownSignalFile}", meta.smWatchTick)
+    ernesto ! WatchShutDownSignalOn(s"${meta.shutdownSignalDir}/${meta.shutdownSignalFile}", meta.smWatchTick)
   }
 
   override def receive: Receive = {

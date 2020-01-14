@@ -56,4 +56,4 @@ DEST_OVERWRITE BOOLEAN) \
 row format delimited \
 fields terminated by '|' \
 collection items terminated by ',' \
-location '/smartcontract';"
+location '/smartcontract/filetohive';"
