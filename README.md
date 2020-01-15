@@ -9,8 +9,9 @@ Warning: Clone on ~/repository/datalake
 Next features:
 
     + Spark Generic Transaction Integration
-    + Google Cloud Storage Client
+    + Google Cloud Storage Client (refactor HDFS to be more than one)
     + new Transaction: HDFSToCloudStorageTransaction
+    + replace Appenders by relational database on sm and transaction entities data
     + tunning on YARN
     + cobol/positional in
     + rollback action on transactions

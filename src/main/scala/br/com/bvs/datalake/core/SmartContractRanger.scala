@@ -33,15 +33,16 @@ object SmartContractRanger {
 
 class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: ActorRef, ernesto: ActorRef)
   extends Actor with ActorLogging {
-  private var ongoingSmarts: mutable.HashMap[Path, (ActorRef, SmartContract)] = _
   private var meta: CoreMetadata = _
   private var hdfsIO: ActorRef = _
-  private var smAppendable: Appendable = _
+  private var ongoingSmarts: mutable.HashMap[Path, (ActorRef, SmartContract)] = _
+  private var appendables: mutable.HashMap[String, Appendable] = _
 
   override def preStart(): Unit = {
     meta = PropertiesHelper.getCoreMetadata
     implicit val clientTimeout: Timeout = meta.clientTimeout
     ongoingSmarts = new mutable.HashMap[Path, (ActorRef, SmartContract)]()
+    appendables = new mutable.HashMap[String, Appendable]()
     hdfsIO = context.actorOf(HdfsIO.props, "hdfs-io")
 
     meta.smHdfsWatch.foreach(dir => {
@@ -55,13 +56,25 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
       hdfsIO ! ListFilesFrom(hdfsClient, s"$dir/${meta.ongoingDirName}")
     })
 
-    val futureAppender = hdfsPool ? GetAppendable(meta.smHdfsDestiny)
+    // TODO appenders will be replaced by relational database
+    val futureSmAppender = hdfsPool ? GetAppendable(meta.smHdfsDestiny)
     try {
-      smAppendable = Await.result(futureAppender, meta.clientTimeout.duration).asInstanceOf[Appendable]
+      val smAppendable = Await.result(futureSmAppender, meta.clientTimeout.duration).asInstanceOf[Appendable]
+      appendables += "sm" -> smAppendable
     } catch {
       case e: Exception =>
-        context.parent ! Failure(new Exception(s"couldn't create HDFS appender to smart contracts: ${e.getMessage}"))
+        context.parent ! Failure(new Exception(s"couldn't create HDFS appender: ${e.getMessage}"))
     }
+
+    val futureFileToHiveAppender = hdfsPool ? GetAppendable(meta.fileToHiveHdfsDestiny)
+    try {
+      val fileToHiveAppendable = Await.result(futureFileToHiveAppender, meta.clientTimeout.duration).asInstanceOf[Appendable]
+      appendables += "FileToHiveTransaction" -> fileToHiveAppendable
+    } catch {
+      case e: Exception =>
+        context.parent ! Failure(new Exception(s"couldn't create HDFS appender: ${e.getMessage}"))
+    }
+
   }
 
   override def receive: Receive = {
@@ -141,11 +154,10 @@ class SmartContractRanger(hdfsClient: FileSystem, hdfsPool: ActorRef, hivePool: 
     hdfsIO ! MoveTo(hdfsClient, ongoingPath, donePath)
 
     val ongoingSm = ongoingSmarts(ongoingPath)
-    hdfsIO ! Append("sm", smAppendable.appender, ongoingSm._2.serializeToCSV)
+    hdfsIO ! Append(appendables("sm").appender, ongoingSm._2.serializeToCSV)
 
-    // TODO create Transactions entities !
-
-    // TODO serialize csv and append FileToHiveTransaction
+    val transactionName = ongoingSm._2.transactionProps.get.transactionName
+    hdfsIO ! Append(appendables(transactionName).appender, ongoingSm._2.transactionProps.get.autoSerializeCSV)
 
     context.stop(ongoingSm._1)
     ongoingSmarts.remove(ongoingPath)

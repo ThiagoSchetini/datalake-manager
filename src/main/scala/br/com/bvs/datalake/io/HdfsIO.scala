@@ -1,10 +1,12 @@
 package br.com.bvs.datalake.io
 
 import java.io.{BufferedInputStream, BufferedReader, ByteArrayInputStream, File, FileInputStream, InputStreamReader}
+
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.actor.Status.Failure
 import org.apache.hadoop.fs._
 import HdfsIO._
+import akka.Done
 import br.com.bvs.datalake.helper.HadoopConfHelper
 
 object HdfsIO {
@@ -13,8 +15,7 @@ object HdfsIO {
   case class Upload(hdfsClient: FileSystem, source: String, target: String)
   case object FileUploaded
 
-  case class Append(name: String, appender: FSDataOutputStream, data: StringBuilder)
-  case class Appended(name: String)
+  case class Append(appender: FSDataOutputStream, data: StringBuilder)
 
   case class ReadFile(hdfsClient: FileSystem, path: Path)
   case class FileDoesNotExist(source: String)
@@ -63,7 +64,7 @@ class HdfsIO extends Actor with ActorLogging {
       outStream.close()
       sender ! FileUploaded
 
-    case Append(target, appender, data) =>
+    case Append(appender, data) =>
       val inStream = new ByteArrayInputStream(data.toString.getBytes())
       val inBuffer = new BufferedInputStream(inStream)
       val bytes = new Array[Byte](bufferSize)
@@ -76,7 +77,7 @@ class HdfsIO extends Actor with ActorLogging {
 
       inBuffer.close()
       inStream.close()
-      sender ! Appended(target)
+      sender ! Done
       /* warning: do not close the appender, it's done by pool */
 
     case ReadFile(hdfsClient, path) =>
