@@ -1,9 +1,9 @@
 package br.com.bvs.datalake.model.serialize
 
-import br.com.bvs.datalake.util.TextUtil
-
 import scala.collection.mutable
 import scala.reflect.runtime.universe._
+
+import br.com.bvs.datalake.util.TextUtil
 
 trait AutoSerializeToCSV {
 
@@ -34,8 +34,9 @@ trait AutoSerializeToCSV {
 
     /* delimited out with only values */
     val csv = new StringBuilder()
-    val delimiter = "|"
+    val delimiter = "#"
+    val newline = "\n"
     fields.foreach(f => csv.append(s"${f._2}$delimiter"))
-    csv.dropRight(1)
+    csv.dropRight(1).append(newline)
   }
 }

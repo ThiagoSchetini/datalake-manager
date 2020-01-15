@@ -10,6 +10,7 @@ case class SmartContract(hash: String,
                          transactionProps: Option[TransactionProps]) {
 
   def serializeToCSV: StringBuilder = {
+    val delimiter = "#"
     val newline = "\n"
     val smBuilder = new StringBuilder()
 
@@ -18,7 +19,7 @@ case class SmartContract(hash: String,
          |$creationTime
          |$smRequester
          |$smAuthorizing"""
-        .stripMargin.replaceAll(newline, "|")).append(newline)
+        .stripMargin.replaceAll(newline, delimiter)).append(newline)
 
     smBuilder
   }

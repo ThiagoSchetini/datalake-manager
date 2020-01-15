@@ -1,34 +1,37 @@
 #!/usr/bin/env bash
 
+#-- log --#
 transaction="FileToHive"
-log="[DATA] Transaction ${transaction}:"
+log="[TRANSACTION] ${transaction}:"
 
 #-- local --#
-test=src/test/data/FileToHiveTransaction
-source1=${test}/source1.csv
-source2=${test}/source2.csv
-source3=${test}/source3.csv
-smPath=${test}/file-to-hive.properties
+root=src/test/data/FileToHiveTransaction
+source1=${root}/source1.csv
+source2=${root}/source2.csv
+source3=${root}/source3.csv
+smPath=${root}/file-to-hive.properties
 
 #-- HDFS --#
-transactionTestPath=/br/com/bvs/datalake/transaction/FileToHiveTransaction
-watchSMPath=${transactionTestPath}/watchSM
-destinyPath=${transactionTestPath}/destiny
-sourcePath=${transactionTestPath}/source
+transactionHdfsRoot=/br/com/bvs/datalake/transaction/FileToHiveTransaction
+transactionHdfsCSV=${transactionHdfsRoot}/file_to_hive
+watchSMHdfs=${transactionHdfsRoot}/watchSM
+destinyHdfs=${transactionHdfsRoot}/destiny
+sourceHdfs=${transactionHdfsRoot}/source
 
 echo "${log} renew HDFS directories"
-hdfs dfs -rm -R -skipTrash ${destinyPath} 2>/dev/null
-hdfs dfs -mkdir -p ${destinyPath}
+hdfs dfs -rm -R -skipTrash ${destinyHdfs} 2>/dev/null
+hdfs dfs -rm -R -skipTrash ${sourceHdfs} 2>/dev/null
+hdfs dfs -rm -R -skipTrash ${watchSMHdfs} 2>/dev/null
+hdfs dfs -mkdir -p ${destinyHdfs}
+hdfs dfs -mkdir -p ${sourceHdfs}
+hdfs dfs -mkdir -p ${watchSMHdfs}
+hdfs dfs -mkdir -p ${transactionHdfsCSV}
 
 echo "${log} copy files"
-hdfs dfs -rm -R -skipTrash ${sourcePath} 2>/dev/null
-hdfs dfs -rm -R -skipTrash ${watchSMPath} 2>/dev/null
-hdfs dfs -mkdir -p ${sourcePath}
-hdfs dfs -mkdir -p ${watchSMPath}
-hdfs dfs -copyFromLocal ${source1} ${sourcePath}
-hdfs dfs -copyFromLocal ${source2} ${sourcePath}
-hdfs dfs -copyFromLocal ${source3} ${sourcePath}
-hdfs dfs -copyFromLocal ${smPath} ${watchSMPath}
+hdfs dfs -copyFromLocal ${source1} ${sourceHdfs}
+hdfs dfs -copyFromLocal ${source2} ${sourceHdfs}
+hdfs dfs -copyFromLocal ${source3} ${sourceHdfs}
+hdfs dfs -copyFromLocal ${smPath} ${watchSMHdfs}
 
 #-- Hive --#
 echo "${log} drop Hive table"
@@ -54,6 +57,6 @@ DEST_FIELDS ARRAY<STRING>,\
 DEST_TYPES ARRAY<STRING>,\
 DEST_OVERWRITE BOOLEAN) \
 row format delimited \
-fields terminated by '|' \
+fields terminated by '#' \
 collection items terminated by ',' \
-location '/br/com/bvs/datalake/model/SmartContract/file_to_hive';"
+location '${transactionHdfsCSV}';"
