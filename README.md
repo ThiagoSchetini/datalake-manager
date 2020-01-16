@@ -68,7 +68,7 @@ Them:
 
 To Shut Down:
 
-`touch target/shutdown-signal/shutdown.signal`
+`sh stop-manager.sh`
 
 ### how to debug on InteliJ:
 Considering your cloned on "~/repository/datalake" Open "Run/Debug Configurations":
