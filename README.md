@@ -15,7 +15,6 @@ Next features:
     + tunning on YARN
     + cobol/positional in
     + rollback action on transactions
-    + Fields will be optional (choose)
     
 Test Environment next features:
 
