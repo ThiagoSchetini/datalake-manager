@@ -29,7 +29,7 @@ object FileToHiveTransaction {
   case object Start
 }
 
-class FileToHiveTransaction(smPath: Path, props: FileToHiveProps, hdfsClient: FileSystem, hivePool: ActorRef, timeout: Timeout)
+class FileToHiveTransaction(path: Path, props: FileToHiveProps, hdfsClient: FileSystem, hivePool: ActorRef, timeout: Timeout)
   extends Actor with ActorLogging {
   private var hiveConn: Connection = _
   private var hiveIO: ActorRef = _
@@ -55,7 +55,7 @@ class FileToHiveTransaction(smPath: Path, props: FileToHiveProps, hdfsClient: Fi
 
   override def receive: Receive = {
     case Start =>
-      log.info(s"start: ${smPath.getName}")
+      log.info(s"start: ${path.getName}")
       val fields = (props.destinationFields, props.destinationTypes).zipped.map((_,_)).toList
       hiveIO ! CheckTable(hiveConn, props.destinationDatabase, props.destinationTable, props.destinationPath, fields)
 
@@ -103,13 +103,13 @@ class FileToHiveTransaction(smPath: Path, props: FileToHiveProps, hdfsClient: Fi
       if (result._1 == 0) {
         if (props.sourceRemove)
           hdfsIO ! RemoveDirectory(hdfsClient, new Path(props.sourcePath))
-        context.parent ! TransactionSuccess(smPath)
+        context.parent ! TransactionSuccess(path)
       } else
-        context.parent ! TransactionFailed(smPath, result._2.mkString)
+        context.parent ! TransactionFailed(path, result._2.mkString)
 
       hivePool ! DisposeConnection(hiveConn)
 
-    case Failure(e) => context.parent ! Failure(e)
+    case Failure(e) => context.parent ! TransactionFailed(path, e.getMessage)
   }
 
   private def executeSparkSubmit(search: String, cmd: Seq[String]): (Int, StringBuilder) = {
